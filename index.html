@@ -1,0 +1,2015 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>La Biblioteca de Alejandría — Infraestructura Psíquica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --base:#1a1510;
+    --baseD:#100c08;
+    --sand:#8a6a42;
+    --sandD:#5a4128;
+    --gold:#e8b84b;
+    --goldD:#a97d34;
+    --text:#f0e6d2;
+    --text-dim:#a99b80;
+    --danger:#b8493a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;background:var(--baseD);overflow:hidden;font-family:'Fraunces',serif;
+    touch-action:none;overscroll-behavior:none}
+  #canvas-holder{position:fixed;inset:0}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  #vignette{
+    position:fixed;inset:0;pointer-events:none;z-index:3;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 52%, rgba(8,6,4,0.6) 100%);
+  }
+
+  #topbar{
+    position:fixed;top:0;left:0;right:0;
+    display:flex;justify-content:space-between;align-items:flex-start;
+    padding:18px;pointer-events:none;z-index:5;
+  }
+  #title{
+    font-family:'Oswald',sans-serif;font-weight:600;font-size:12.5px;
+    letter-spacing:0.07em;color:var(--text-dim);max-width:190px;line-height:1.5;
+    text-shadow:0 1px 6px rgba(0,0,0,0.8);
+  }
+  #title b{color:var(--gold);font-weight:500}
+  #top-right{display:flex;align-items:flex-start;gap:8px;pointer-events:auto}
+  #storage-note{
+    font-family:'Oswald',sans-serif;font-size:9.5px;color:var(--text-dim);
+    text-align:right;max-width:140px;line-height:1.5;opacity:0.75;
+    text-shadow:0 1px 6px rgba(0,0,0,0.8);
+  }
+  #btn-info, #btn-index{
+    width:26px;height:26px;border-radius:50%;flex:none;
+    background:rgba(16,12,8,0.6);border:1px solid var(--sandD);
+    color:var(--gold);font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  #btn-info:hover, #btn-index:hover{border-color:var(--gold)}
+
+  #drag-hint{
+    position:fixed;left:50%;bottom:110px;transform:translateX(-50%);
+    font-family:'Oswald',sans-serif;font-size:10.5px;letter-spacing:0.05em;
+    color:var(--text-dim);background:rgba(16,12,8,0.55);
+    padding:8px 14px;pointer-events:none;z-index:5;
+    transition:opacity 0.6s ease;text-align:center;
+  }
+  #drag-hint.hide{opacity:0}
+
+  #dock{
+    position:fixed;bottom:0;left:0;right:0;
+    display:flex;justify-content:center;
+    padding:16px 14px calc(18px + env(safe-area-inset-bottom));
+    pointer-events:none;z-index:5;
+  }
+  #dock-inner{
+    pointer-events:auto;
+    display:flex;align-items:center;gap:6px;
+    background:rgba(16,12,8,0.72);
+    border:1px solid var(--sandD);
+    border-radius:999px;
+    padding:8px;
+    backdrop-filter:blur(8px);
+  }
+  .icon-btn{
+    width:48px;height:48px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--base);border:1px solid var(--sandD);
+    color:var(--text-dim);cursor:pointer;
+    transition:border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+    -webkit-appearance:none;flex:none;position:relative;
+  }
+  .icon-btn svg{width:20px;height:20px}
+  .icon-btn:active, .icon-btn:hover{border-color:var(--gold);color:var(--gold);background:var(--baseD)}
+  .icon-btn .dot{position:absolute;width:6px;height:6px;border-radius:50%;top:6px;right:6px}
+  #dock-count{
+    font-family:'Oswald',sans-serif;font-size:10.5px;color:var(--text-dim);
+    padding:0 10px;white-space:nowrap;
+  }
+
+  input[type=file]{display:none}
+
+  .overlay{
+    position:fixed;inset:0;background:rgba(8,6,4,0.88);
+    display:none;align-items:center;justify-content:center;
+    padding:20px;z-index:20;
+  }
+  .overlay.open{display:flex}
+  .overlay.open .panel{ animation: riseIn 0.22s cubic-bezier(.2,.8,.3,1); }
+  @keyframes riseIn{
+    from{ opacity:0; transform:translateY(14px) scale(0.97); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+  }
+  .panel{
+    width:100%;max-width:440px;max-height:88vh;overflow-y:auto;
+    background:var(--base);border:1px solid var(--sandD);
+    padding:24px 22px;
+  }
+  .panel h2{
+    font-family:'Oswald',sans-serif;font-weight:600;font-size:15px;
+    letter-spacing:0.03em;color:var(--gold);margin-bottom:4px;
+  }
+  .panel .sub{font-family:'Oswald',sans-serif;font-size:10.5px;color:var(--text-dim);margin-bottom:16px;line-height:1.6}
+  .field{margin-bottom:13px}
+  .field label{
+    display:block;font-family:'Oswald',sans-serif;font-size:10.5px;
+    letter-spacing:0.04em;color:var(--text-dim);margin-bottom:6px;
+  }
+  .field input[type=text], .field textarea{
+    width:100%;background:var(--baseD);border:1px solid var(--sandD);
+    color:var(--text);font-family:'Fraunces',serif;font-size:16px;
+    padding:10px 11px;resize:vertical;
+  }
+  .field textarea{min-height:100px;line-height:1.65}
+  .field input[type=text]:focus, .field textarea:focus{outline:none;border-color:var(--gold)}
+  #file-preview{margin-top:10px}
+  #file-preview img{max-width:100%;max-height:150px;display:block;border:1px solid var(--sandD)}
+  #file-preview video{max-width:100%;max-height:150px;display:block;border:1px solid var(--sandD)}
+  #file-preview .fname{font-family:'Oswald',sans-serif;font-size:10.5px;color:var(--text-dim);margin-top:6px}
+  .warn{font-family:'Oswald',sans-serif;font-size:10px;color:var(--danger);margin-top:8px;line-height:1.6;display:none}
+  .warn.show{display:block}
+  .panel-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+  .btn{
+    font-family:'Oswald',sans-serif;font-size:12px;font-weight:500;
+    letter-spacing:0.03em;padding:11px 16px;cursor:pointer;border:1px solid var(--sandD);
+    background:transparent;color:var(--text-dim);-webkit-appearance:none;
+  }
+  .btn.primary{border-color:var(--gold);color:var(--gold)}
+  .btn.primary:active, .btn.primary:hover{background:var(--gold);color:var(--baseD)}
+  .btn:active, .btn:hover{color:var(--text)}
+  .error-msg{font-family:'Oswald',sans-serif;font-size:10.5px;color:var(--danger);margin-top:6px;display:none}
+  .error-msg.show{display:block}
+
+  #detail.overlay{ padding:10px; }
+  #detail-panel{
+    max-width:100%; width:100%; max-height:97vh;
+    position:relative;
+    background:radial-gradient(ellipse at 50% 0%, rgba(232,184,75,0.09) 0%, rgba(26,21,16,0.99) 60%);
+    border:1px solid var(--goldD);
+    box-shadow:0 0 0 1px rgba(232,184,75,0.15) inset, 0 30px 60px rgba(0,0,0,0.55);
+    padding:30px 26px;
+  }
+  #detail-panel::before, #detail-panel::after{
+    content:'';position:absolute;width:22px;height:22px;
+    border:1.5px solid var(--gold);opacity:0.65;pointer-events:none;
+  }
+  #detail-panel::before{top:10px;left:10px;border-right:none;border-bottom:none}
+  #detail-panel::after{bottom:10px;right:10px;border-left:none;border-top:none}
+  #detail-title{font-size:19px !important;letter-spacing:0.05em !important;max-width:620px;margin:0 auto}
+  #detail-body{font-family:'Fraunces',serif;font-size:17px;line-height:1.85;color:var(--text);white-space:pre-wrap;max-width:620px;margin:0 auto}
+  #detail-body .detail-text::first-letter{
+    font-size:3.1em;float:left;line-height:0.78;padding:0.04em 0.09em 0 0;
+    color:var(--gold);font-weight:600;
+  }
+  #detail-body img, #detail-body video{max-width:100%;display:block;margin-bottom:14px;border:1px solid var(--sandD)}
+  #detail-meta{font-family:'Oswald',sans-serif;font-size:10px;color:var(--text-dim);margin:14px auto 0;letter-spacing:0.03em;max-width:620px}
+  .delete-link{font-family:'Oswald',sans-serif;font-size:11px;color:var(--text-dim);text-decoration:underline;cursor:pointer;margin-top:14px;display:inline-block}
+  .delete-link:hover{color:var(--danger)}
+
+  /* ---- floating "crystal library" info window ---- */
+  #info-panel{
+    max-width:420px;position:relative;overflow:hidden;
+    background:radial-gradient(ellipse at 50% 20%, rgba(122,90,58,0.28) 0%, rgba(10,7,16,0.96) 65%);
+    border:1px solid var(--goldD);
+  }
+  .orb{
+    position:absolute;border-radius:50%;pointer-events:none;filter:blur(0.3px);
+    opacity:0.55;
+  }
+  .orb.o1{width:90px;height:90px;top:-30px;left:-24px;
+    background:radial-gradient(circle at 35% 30%, rgba(232,184,75,0.55), rgba(232,184,75,0.05) 70%);
+    border:1px solid rgba(232,184,75,0.3);}
+  .orb.o2{width:60px;height:60px;top:20px;right:-18px;
+    background:radial-gradient(circle at 35% 30%, rgba(122,183,201,0.5), rgba(122,183,201,0.04) 70%);
+    border:1px solid rgba(122,183,201,0.28);}
+  .orb.o3{width:40px;height:40px;bottom:-10px;left:40%;
+    background:radial-gradient(circle at 35% 30%, rgba(200,90,110,0.45), rgba(200,90,110,0.04) 70%);
+    border:1px solid rgba(200,90,110,0.25);}
+  .info-star{position:absolute;width:2px;height:2px;background:#f0e6d2;border-radius:50%;opacity:0.7}
+  #info-panel .content{position:relative;z-index:1}
+  #info-panel h2{color:var(--gold)}
+  #info-summary{
+    font-family:'Oswald',sans-serif;font-size:11.5px;line-height:1.9;color:var(--text);
+    letter-spacing:0.04em;margin-top:4px;
+  }
+  #info-summary b{color:var(--gold);font-weight:600}
+  .legend{display:flex;gap:14px;margin-top:18px;flex-wrap:wrap}
+  .legend-item{display:flex;align-items:center;gap:7px;font-family:'Oswald',sans-serif;font-size:10px;color:var(--text-dim)}
+  .legend-dot{width:9px;height:9px;border-radius:50%;flex:none}
+
+  #empty-hint{
+    position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);
+    font-family:'Oswald',sans-serif;font-size:11px;color:var(--text-dim);
+    text-align:center;max-width:210px;line-height:1.9;letter-spacing:0.02em;
+    pointer-events:none;opacity:0.75;z-index:4;text-shadow:0 1px 6px rgba(0,0,0,0.8);
+  }
+
+  #loading{
+    position:fixed;inset:0;background:var(--baseD);z-index:30;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:0.08em;color:var(--text-dim);
+    transition:opacity 0.5s ease;
+  }
+  #loading.hide{opacity:0;pointer-events:none}
+
+  .caps{text-transform:uppercase;letter-spacing:0.06em}
+  .panel h2, .panel .sub, .field label, .btn, .warn, .error-msg, .legend-item, #detail-meta{
+    text-transform:uppercase;letter-spacing:0.05em;
+  }
+
+  #joystick{
+    position:fixed;left:0;top:0;width:104px;height:104px;
+    z-index:6;touch-action:none;pointer-events:none;
+    opacity:0;transition:opacity 0.15s ease;
+  }
+  #joystick.active{opacity:1}
+  #joy-base{
+    width:104px;height:104px;border-radius:50%;
+    background:rgba(16,12,8,0.55);border:1px solid var(--sandD);
+    position:relative;backdrop-filter:blur(6px);
+  }
+  #joy-knob{
+    width:44px;height:44px;border-radius:50%;
+    background:rgba(232,184,75,0.5);border:1px solid var(--gold);
+    position:absolute;left:30px;top:30px;
+  }
+
+  #index-list{max-height:50vh;overflow-y:auto;margin-top:4px}
+  .index-item{
+    display:flex;align-items:center;gap:10px;
+    padding:12px 4px;border-bottom:1px solid var(--sandD);cursor:pointer;
+  }
+  .index-item:last-child{border-bottom:none}
+  .index-item:hover{background:rgba(232,184,75,0.06)}
+  .index-dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .index-title{font-family:'Fraunces',serif;font-size:15px;color:var(--text);flex:1;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .index-empty{font-family:'Oswald',sans-serif;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;padding:10px 4px}
+
+  #cat-picker{display:flex;gap:6px;flex-wrap:wrap}
+  .cat-chip{
+    font-family:'Oswald',sans-serif;font-size:10.5px;text-transform:uppercase;letter-spacing:0.04em;
+    padding:8px 10px;border:1px solid var(--sandD);background:var(--baseD);color:var(--text-dim);
+    cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-appearance:none;
+  }
+  .cat-chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .cat-chip.selected{border-color:var(--gold);color:var(--text);background:rgba(232,184,75,0.08)}
+  #btn-attach-doc{margin-top:8px;width:100%;text-align:center}
+
+  #type-tabs{display:flex;gap:6px;margin:10px 0 4px}
+  .type-tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+    padding:10px 4px;border:1px solid var(--sandD);background:var(--baseD);
+    color:var(--text-dim);cursor:pointer;-webkit-appearance:none;
+  }
+  .type-tab svg{width:18px;height:18px}
+  .type-tab span{font-family:'Oswald',sans-serif;font-size:9.5px;text-transform:uppercase;letter-spacing:0.04em}
+  .type-tab.selected{border-color:var(--gold);color:var(--gold);background:rgba(232,184,75,0.08)}
+  .file-pick-btn{width:100%;text-align:center}
+  #field-file .fname{font-family:'Oswald',sans-serif;font-size:10.5px;color:var(--gold);margin-top:8px;text-align:center}
+
+  ::-webkit-scrollbar{width:8px}
+  ::-webkit-scrollbar-track{background:var(--base)}
+  ::-webkit-scrollbar-thumb{background:var(--sandD)}
+</style>
+</head>
+<body>
+
+<div id="loading" class="caps">encendiendo lámparas</div>
+
+<div id="canvas-holder"></div>
+<div id="vignette"></div>
+
+<div id="empty-hint" class="caps">sala vacía · subí un apunte</div>
+
+<div id="topbar">
+  <div id="title" class="caps">biblioteca de alejandría</div>
+  <div id="top-right">
+    <div id="storage-note" class="caps">texto/imagen persisten · video intenta subirse</div>
+    <button id="btn-index" aria-label="índice de apuntes">☰</button>
+    <button id="btn-info" aria-label="qué se puede hacer aquí">i</button>
+  </div>
+</div>
+
+<div id="drag-hint" class="caps">izq: caminar · der: mirar y tocar</div>
+
+<div id="joystick">
+  <div id="joy-base"><div id="joy-knob"></div></div>
+</div>
+
+<div id="dock">
+  <div id="dock-inner">
+    <button class="icon-btn" id="btn-add" aria-label="agregar apunte" style="width:56px;height:56px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <span id="dock-count" class="caps">0 notas</span>
+  </div>
+</div>
+
+<input type="file" id="file-image" accept="image/*">
+<input type="file" id="file-video" accept="video/*,.avi,.mov,.mkv">
+<input type="file" id="file-doc" accept=".txt,.md,text/plain,.pdf,application/pdf">
+
+<div class="overlay" id="composer">
+  <div class="panel">
+    <h2>nuevo apunte</h2>
+    <div id="type-tabs">
+      <button type="button" class="type-tab selected" data-type="text">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 4h12M6 9h12M6 14h8M6 19h5"/></svg>
+        <span>texto</span>
+      </button>
+      <button type="button" class="type-tab" data-type="image">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="1"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 17l5-5 4 4 3-3 4 4"/></svg>
+        <span>imagen</span>
+      </button>
+      <button type="button" class="type-tab" data-type="video">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6" width="13" height="12" rx="1"/><path d="M16.5 10l4-2.5v9l-4-2.5"/></svg>
+        <span>video</span>
+      </button>
+      <button type="button" class="type-tab" data-type="doc">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+        <span>doc</span>
+      </button>
+    </div>
+    <div class="sub" id="composer-sub"></div>
+    <div class="field" id="field-cat">
+      <label>categoría</label>
+      <div id="cat-picker"></div>
+      <div id="cat-new-panel" style="display:none;margin-top:10px">
+        <input type="text" id="cat-new-name" maxlength="16" placeholder="nombre de la categoría">
+        <div class="sub" style="margin:8px 0 4px">reemplaza a:</div>
+        <div id="cat-new-targets"></div>
+      </div>
+    </div>
+    <div class="field" id="field-title">
+      <label>título</label>
+      <input type="text" id="input-title" maxlength="60" placeholder="sin título">
+    </div>
+    <div class="field" id="field-subcat">
+      <label>subcategoría (opcional)</label>
+      <input type="text" id="input-subcat" maxlength="30" placeholder="ej: sonetos, ensayo breve...">
+    </div>
+    <div class="field" id="field-file" style="display:none">
+      <label id="field-file-label">archivo</label>
+      <button class="btn file-pick-btn" id="btn-pick-file" type="button">elegir archivo</button>
+    </div>
+    <div class="field" id="field-text">
+      <label id="field-text-label">texto</label>
+      <textarea id="input-text" placeholder="escribí..."></textarea>
+    </div>
+    <div id="file-preview"></div>
+    <div class="warn" id="composer-warn"></div>
+    <div class="error-msg" id="composer-error"></div>
+    <div class="panel-actions">
+      <button class="btn" id="btn-cancel">cancelar</button>
+      <button class="btn primary" id="btn-save">guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="detail">
+  <div class="panel" id="detail-panel">
+    <h2 id="detail-title"></h2>
+    <div id="detail-body"></div>
+    <div id="detail-meta"></div>
+    <span class="delete-link" id="btn-delete">borrar</span>
+    <div class="panel-actions">
+      <button class="btn" id="btn-close">cerrar</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="overlay" id="indexOverlay">
+  <div class="panel">
+    <h2>índice</h2>
+    <div class="sub">tocá un apunte para abrirlo</div>
+    <div id="index-list"></div>
+    <div class="panel-actions">
+      <button class="btn" id="btn-index-close">cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="info">
+  <div class="panel" id="info-panel">
+    <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+    <div class="info-star" style="top:14px;left:60%"></div>
+    <div class="info-star" style="top:60px;left:20%"></div>
+    <div class="info-star" style="top:100px;right:30%"></div>
+    <div class="content">
+      <h2>biblioteca</h2>
+      <div id="info-summary">
+        ESTO ES UNA BIBLIOTECA. CADA ESTANTE ES UNA CATEGORÍA.<br>
+        SUBÍS TEXTO, IMAGEN O VIDEO Y SE CONVIERTE EN UN LIBRO ENCENDIDO EN SU ESTANTE.<br>
+        TOCÁ UN LIBRO ENCENDIDO PARA LEER SU CONTENIDO.<br><br>
+        CAMINÁS CON EL JOYSTICK (MITAD IZQ. DE PANTALLA)<br>
+        MIRÁS ARRASTRANDO (MITAD DER. DE PANTALLA)<br>
+        EL CÍRCULO DORADO EN EL PISO TE LLEVA DE UN SALTO A ESA ESTANTERÍA<br>
+        ☰ ARRIBA ABRE EL ÍNDICE DE TODOS TUS APUNTES<br><br>
+        CADA FILA DEL ESTANTE ES UNA SUBCATEGORÍA — LA ELEGÍS VOS AL SUBIR<br>
+        "+ NUEVA" AL SUBIR: CREÁ TU PROPIA CATEGORÍA
+      </div>
+      <div class="legend" id="legend-dynamic"></div>
+      <div class="panel-actions">
+        <button class="btn primary" id="btn-info-close">entrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var SR = THREE.sRGBEncoding !== undefined;
+
+  // ---- storage safety: window.storage only exists inside the Claude artifact runtime ----
+  var storageAvailable = (typeof window.storage !== 'undefined' && window.storage !== null);
+  function noteStorageGone(){
+    if(!storageAvailable) return;
+    storageAvailable = false;
+    var sn = document.getElementById('storage-note');
+    if(sn) sn.textContent = 'SIN GUARDADO PERSISTENTE';
+  }
+  function withTimeout(promise, ms){
+    return new Promise(function(resolve){
+      var done = false;
+      var timer = setTimeout(function(){ if(!done){ done=true; resolve(null); } }, ms);
+      Promise.resolve(promise).then(function(v){
+        if(!done){ done=true; clearTimeout(timer); resolve(v); }
+      }).catch(function(){
+        if(!done){ done=true; clearTimeout(timer); resolve(null); }
+      });
+    });
+  }
+  function safeGet(key, shared){
+    if(!storageAvailable) return Promise.resolve(null);
+    try{
+      return withTimeout(window.storage.get(key, shared), 2200).then(function(v){
+        if(v === null) return null;
+        return v;
+      });
+    }catch(e){ noteStorageGone(); return Promise.resolve(null); }
+  }
+  function safeSet(key, value, shared){
+    if(!storageAvailable) return Promise.resolve(null);
+    try{
+      return withTimeout(window.storage.set(key, value, shared), 2200);
+    }catch(e){ noteStorageGone(); return Promise.resolve(null); }
+  }
+  if(!storageAvailable){
+    var sn0 = document.getElementById('storage-note');
+    if(sn0) sn0.textContent = 'SIN GUARDADO PERSISTENTE';
+  }
+
+  // ============================================================
+  // TEXTURE HELPERS (procedural — no external assets)
+  // ============================================================
+  function clamp255(v){ return Math.max(0, Math.min(255, v)); }
+
+  function makeGrainTexture(hex, variance, size, repeatX, repeatY){
+    var c = document.createElement('canvas'); c.width = size; c.height = size;
+    var ctx = c.getContext('2d');
+    var base = new THREE.Color(hex);
+    var img = ctx.createImageData(size, size);
+    for(var i=0;i<img.data.length;i+=4){
+      var n = (Math.random()-0.5) * variance;
+      var n2 = (Math.random()-0.5) * variance * 0.4;
+      img.data[i]   = clamp255(base.r*255 + n);
+      img.data[i+1] = clamp255(base.g*255 + n + n2);
+      img.data[i+2] = clamp255(base.b*255 + n);
+      img.data[i+3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 1;
+    for(var s=0; s<6; s++){
+      ctx.beginPath();
+      var sx = Math.random()*size, sy = Math.random()*size;
+      ctx.moveTo(sx, sy);
+      for(var seg=0; seg<4; seg++){
+        sx += (Math.random()-0.5)*size*0.3;
+        sy += (Math.random()-0.5)*size*0.3;
+        ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+    }
+    var tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(repeatX||1, repeatY||1);
+    return tex;
+  }
+
+  function shadeHex(hex, amt){
+    var c = new THREE.Color(hex);
+    var h={},s={},l={}; c.getHSL(h);
+    c.offsetHSL(0,0, amt);
+    return c.getHex();
+  }
+
+  var texFloor  = makeGrainTexture(0x241b12, 26, 160, 16, 22);
+  var texWall   = makeGrainTexture(0x1a1510, 16, 128, 9, 5);
+  var texColumn = makeGrainTexture(0x8a6a42, 20, 128, 4, 3);
+  var texShelfFrame = makeGrainTexture(0x5a4128, 18, 96, 2, 2);
+
+  // ============================================================
+  // THREE.JS SCENE — grand colonnade hall, Alexandria scale
+  // ============================================================
+  var holder = $('canvas-holder');
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0d0a06);
+  scene.fog = new THREE.FogExp2(0x0d0a06, 0.0125);
+  var world = new THREE.Group();
+  scene.add(world);
+
+  var camera = new THREE.PerspectiveCamera(84, window.innerWidth/window.innerHeight, 0.1, 500);
+  var renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false, powerPreference:'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 1.6));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // the scene never moves — compute shadow maps once instead of every frame
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  if(SR){ renderer.outputEncoding = THREE.sRGBEncoding; }
+  holder.appendChild(renderer.domElement);
+
+  // ---- first-person walk rig: look around freely, walk forward/back ----
+  var pos = new THREE.Vector3(0, 22, 70);
+  var yaw = Math.PI, pitch = 0.32;
+  var PITCH_MIN = -1.1, PITCH_MAX = 1.1;
+  var BOUND_X = 34, BOUND_Z_MIN = -88, BOUND_Z_MAX = 85;
+
+  function lookDir(){
+    return new THREE.Vector3(
+      Math.sin(yaw) * Math.cos(pitch),
+      Math.sin(pitch),
+      Math.cos(yaw) * Math.cos(pitch)
+    );
+  }
+  function updateCamera(){
+    camera.position.copy(pos);
+    var d = lookDir();
+    camera.lookAt(pos.x + d.x, pos.y + d.y, pos.z + d.z);
+  }
+  function clampPos(){
+    pos.x = Math.min(BOUND_X, Math.max(-BOUND_X, pos.x));
+    pos.z = Math.min(BOUND_Z_MAX, Math.max(BOUND_Z_MIN, pos.z));
+  }
+  function moveForward(amount){
+    pos.x += Math.sin(yaw) * amount;
+    pos.z += Math.cos(yaw) * amount;
+    clampPos();
+  }
+  function strafe(amount){
+    pos.x += -Math.cos(yaw) * amount;
+    pos.z += Math.sin(yaw) * amount;
+    clampPos();
+  }
+  updateCamera();
+
+  // ---- lighting: warm oil-lamp ambience ----
+  world.add(new THREE.AmbientLight(0x8a6a42, 0.4));
+  world.add(new THREE.HemisphereLight(0xc9a878, 0x0d0a06, 0.32));
+
+  var flickerLights = [];
+  function addLamp(x,y,z,intensity,distance,castShadow,flicker){
+    var l = new THREE.PointLight(0xe8b84b, intensity||1.1, distance||18, 2);
+    l.position.set(x,y,z);
+    if(castShadow){
+      l.castShadow = true;
+      l.shadow.mapSize.set(512,512);
+      l.shadow.camera.near = 0.5;
+      l.shadow.camera.far = distance||18;
+      l.shadow.bias = -0.003;
+    }
+    world.add(l);
+    var bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12), new THREE.MeshBasicMaterial({ color:0xe8b84b }));
+    bulb.position.set(x,y,z);
+    world.add(bulb);
+    if(flicker){ l.userData.baseIntensity = intensity||1.1; flickerLights.push(l); }
+    return l;
+  }
+  addLamp(-6.4, 8.6, -4, 1.4, 22, true);
+  addLamp(6.4, 8.6, -4, 1.4, 22, true);
+  addLamp(-6.4, 8.6, -13, 1.2, 20, false);
+  addLamp(6.4, 8.6, -13, 1.2, 20, false);
+  addLamp(-6.4, 8.6, -22, 1.2, 20, false);
+  addLamp(6.4, 8.6, -22, 1.2, 20, false);
+  addLamp(-6.4, 8.6, -31, 1.1, 18, false);
+  addLamp(6.4, 8.6, -31, 1.1, 18, false);
+  addLamp(0, 10.4, -38, 1.9, 22, false);
+
+  // ---- materials ----
+  var matFloor = new THREE.MeshStandardMaterial({ map:texFloor, roughness:0.92, metalness:0.04 });
+  var matWall  = new THREE.MeshStandardMaterial({ map:texWall, roughness:0.96, metalness:0.02 });
+  var matCeil  = new THREE.MeshStandardMaterial({ color:0x161009, roughness:0.95, metalness:0.02 });
+  var matSand  = new THREE.MeshStandardMaterial({ map:texColumn, roughness:0.8, metalness:0.05 });
+  var matSandD = new THREE.MeshStandardMaterial({ color:0x5a4128, roughness:0.82, metalness:0.05 });
+  var matGold  = new THREE.MeshStandardMaterial({ color:0xe8b84b, roughness:0.55, metalness:0.25, emissive:0x2a1c08, emissiveIntensity:0.12 });
+  var matShelfFrame = new THREE.MeshStandardMaterial({ map:texShelfFrame, roughness:0.85, metalness:0.04 });
+
+  var HALL_W = 34, HALL_D = 68, WALL_X = 17, BACK_Z = -40, FRONT_Z = 12, CEIL_Y = 12.5;
+
+  // ---- floor ----
+  var floor = new THREE.Mesh(new THREE.PlaneGeometry(HALL_W, HALL_D), matFloor);
+  floor.rotation.x = -Math.PI/2;
+  floor.position.set(0, 0, -14);
+  floor.receiveShadow = true;
+  world.add(floor);
+
+  [ -4, -22, -36 ].forEach(function(z){
+    for(var ring=0; ring<2; ring++){
+      var rMesh = new THREE.Mesh(new THREE.RingGeometry(3.3+ring*0.14, 3.44+ring*0.14, 56), matGold);
+      rMesh.rotation.x = -Math.PI/2;
+      rMesh.position.set(0, 0.012, z);
+      world.add(rMesh);
+    }
+  });
+
+  // ---- ceiling: coffered, with cross-beams ----
+  var ceiling = new THREE.Mesh(new THREE.PlaneGeometry(HALL_W, HALL_D), matCeil);
+  ceiling.rotation.x = Math.PI/2;
+  ceiling.position.set(0, CEIL_Y, -14);
+  ceiling.receiveShadow = true;
+  world.add(ceiling);
+  for(var bz=FRONT_Z-2; bz>BACK_Z; bz-=4.4){
+    var beam = new THREE.Mesh(new THREE.BoxGeometry(HALL_W-1, 0.38, 0.48), matSandD);
+    beam.position.set(0, CEIL_Y-0.32, bz);
+    beam.castShadow = true;
+    world.add(beam);
+  }
+  var beamLong = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.34, HALL_D-2), matSandD);
+  beamLong.position.set(0, CEIL_Y-0.3, -14);
+  world.add(beamLong);
+
+  // ---- entrance dome: opens a rotunda above the entry, ribbed in bronze ----
+  (function(){
+    var domeR = 9;
+    var domeGeo = new THREE.SphereGeometry(domeR, 32, 16, 0, Math.PI*2, 0, Math.PI/2.1);
+    var domeMat = new THREE.MeshStandardMaterial({ color:0x161009, roughness:0.92, metalness:0.03, side:THREE.BackSide });
+    var dome = new THREE.Mesh(domeGeo, domeMat);
+    dome.position.set(0, CEIL_Y, 6);
+    dome.receiveShadow = true;
+    world.add(dome);
+    var oculus = new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,0.3,20), matGold);
+    oculus.position.set(0, CEIL_Y+domeR*0.97, 6);
+    world.add(oculus);
+    for(var ring=0; ring<4; ring++){
+      var rr = domeR * (0.28 + ring*0.22);
+      var ribY = CEIL_Y + Math.sqrt(Math.max(domeR*domeR - rr*rr, 0)) * 0.99;
+      var rib = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.045, 6, 28), matSandD);
+      rib.rotation.x = Math.PI/2;
+      rib.position.set(0, ribY, 6);
+      world.add(rib);
+    }
+    var domeLamp = new THREE.PointLight(0xe8b84b, 1.6, 22, 2);
+    domeLamp.position.set(0, CEIL_Y + domeR*0.6, 6);
+    world.add(domeLamp);
+  })();
+
+  // ---- back + side walls ----
+  var backWall = new THREE.Mesh(new THREE.PlaneGeometry(HALL_W, CEIL_Y+2), matWall);
+  backWall.position.set(0, CEIL_Y/2, BACK_Z);
+  backWall.receiveShadow = true;
+  world.add(backWall);
+  var leftWall = new THREE.Mesh(new THREE.PlaneGeometry(HALL_D+6, CEIL_Y+2), matWall);
+  leftWall.rotation.y = Math.PI/2;
+  leftWall.position.set(-WALL_X, CEIL_Y/2, -14);
+  leftWall.receiveShadow = true;
+  world.add(leftWall);
+  var rightWall = new THREE.Mesh(new THREE.PlaneGeometry(HALL_D+6, CEIL_Y+2), matWall);
+  rightWall.rotation.y = -Math.PI/2;
+  rightWall.position.set(WALL_X, CEIL_Y/2, -14);
+  rightWall.receiveShadow = true;
+  world.add(rightWall);
+
+  function addBaseboard(x1,z1,x2,z2){
+    var len = Math.hypot(x2-x1, z2-z1);
+    var b = new THREE.Mesh(new THREE.BoxGeometry(len, 0.22, 0.12), new THREE.MeshStandardMaterial({ color:0x0c0906, roughness:1 }));
+    b.position.set((x1+x2)/2, 0.11, (z1+z2)/2);
+    b.rotation.y = Math.atan2(x2-x1, z2-z1) + Math.PI/2;
+    world.add(b);
+  }
+  addBaseboard(-WALL_X, BACK_Z+0.05, WALL_X, BACK_Z+0.05);
+  addBaseboard(-WALL_X+0.05, FRONT_Z, -WALL_X+0.05, BACK_Z);
+  addBaseboard(WALL_X-0.05, FRONT_Z, WALL_X-0.05, BACK_Z);
+
+  // ---- colonnade: two rows of columns receding in Z (slim, set back near the walls) ----
+  // instanced: columns/caps/bases/bevels/flutes each get one draw call for all 10 columns
+  var columnGeo = new THREE.CylinderGeometry(0.3, 0.36, 11.2, 22);
+  var capGeo = new THREE.CylinderGeometry(0.46, 0.34, 0.36, 22);
+  var baseGeo = new THREE.CylinderGeometry(0.42, 0.48, 0.28, 22);
+  var bevelGeo = new THREE.TorusGeometry(0.37, 0.03, 8, 22);
+  var fluteGeo = new THREE.BoxGeometry(0.03, 10.6, 0.03);
+  var colZs = [-2, -11, -20, -29, -37];
+  var colXs = [-11.5, 11.5];
+  var colCount = colXs.length * colZs.length;
+  var colInst = new THREE.InstancedMesh(columnGeo, matSand, colCount);
+  var capInst = new THREE.InstancedMesh(capGeo, matSandD, colCount);
+  var baseInst = new THREE.InstancedMesh(baseGeo, matSandD, colCount);
+  var bevelInst = new THREE.InstancedMesh(bevelGeo, matGold, colCount*2);
+  var fluteInst = new THREE.InstancedMesh(fluteGeo, matSandD, colCount*4);
+  colInst.castShadow = true; colInst.receiveShadow = true;
+  capInst.castShadow = true;
+  baseInst.receiveShadow = true;
+  var bevelQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), Math.PI/2);
+  var identQuat = new THREE.Quaternion();
+  var unitScale = new THREE.Vector3(1,1,1);
+  var ci = 0, bi = 0, fi = 0;
+  colXs.forEach(function(xSide){
+    colZs.forEach(function(z){
+      colInst.setMatrixAt(ci, new THREE.Matrix4().compose(new THREE.Vector3(xSide,5.92,z), identQuat, unitScale));
+      capInst.setMatrixAt(ci, new THREE.Matrix4().compose(new THREE.Vector3(xSide,11.71,z), identQuat, unitScale));
+      baseInst.setMatrixAt(ci, new THREE.Matrix4().compose(new THREE.Vector3(xSide,0.16,z), identQuat, unitScale));
+      bevelInst.setMatrixAt(bi++, new THREE.Matrix4().compose(new THREE.Vector3(xSide,11.37,z), bevelQuat, unitScale));
+      bevelInst.setMatrixAt(bi++, new THREE.Matrix4().compose(new THREE.Vector3(xSide,0.47,z), bevelQuat, unitScale));
+      for(var f=0; f<4; f++){
+        var ang = (f/4) * Math.PI*2;
+        fluteInst.setMatrixAt(fi++, new THREE.Matrix4().compose(
+          new THREE.Vector3(xSide + Math.cos(ang)*0.32, 5.92, z + Math.sin(ang)*0.32), identQuat, unitScale));
+      }
+      ci++;
+    });
+  });
+  colInst.instanceMatrix.needsUpdate = true;
+  capInst.instanceMatrix.needsUpdate = true;
+  baseInst.instanceMatrix.needsUpdate = true;
+  bevelInst.instanceMatrix.needsUpdate = true;
+  fluteInst.instanceMatrix.needsUpdate = true;
+  [colInst, capInst, baseInst, bevelInst, fluteInst].forEach(function(im){ im.frustumCulled = false; });
+  world.add(colInst, capInst, baseInst, bevelInst, fluteInst);
+
+  // ---- shelving bays: categorized by color, rows = subcategories ----
+  var bookColors = [0x7a3b2e, 0x5a4a2a, 0x2e4a3a, 0x4a3020, 0x6a2e2e, 0x3a3a2a, 0x5a3a4a];
+  var bookMaterials = bookColors.map(function(c){ return new THREE.MeshStandardMaterial({ color:c, roughness:0.88 }); });
+  // decorative filler books are instanced: one draw call per color instead of one per book
+  var bookGeo = new THREE.BoxGeometry(1,1,1);
+  var bookInstanceGroups = bookColors.map(function(){ return []; });
+  var _m4 = new THREE.Matrix4(), _q4 = new THREE.Quaternion();
+  function pickBookColorIdx(rand){
+    return Math.abs(Math.floor(rand()*bookColors.length)) % bookColors.length;
+  }
+  function queueInstancedBook(x,y,z, dimX,dimY,dimZ, rand){
+    var idx = pickBookColorIdx(rand);
+    var m = new THREE.Matrix4().compose(
+      new THREE.Vector3(x,y,z), _q4, new THREE.Vector3(dimX,dimY,dimZ)
+    );
+    bookInstanceGroups[idx].push(m);
+  }
+  function flushInstancedBooks(){
+    bookInstanceGroups.forEach(function(matrices, idx){
+      if(!matrices.length) return;
+      var im = new THREE.InstancedMesh(bookGeo, bookMaterials[idx], matrices.length);
+      matrices.forEach(function(m, i){ im.setMatrixAt(i, m); });
+      im.instanceMatrix.needsUpdate = true;
+      im.frustumCulled = false;
+      world.add(im);
+    });
+  }
+  var CATEGORY_COLORS = [0xe8b84b, 0x4a8a7a, 0x8a3a4a, 0xa97d34, 0xb0562e, 0x5a7fa8, 0x8a5ca8, 0x6a8a3a, 0xa85c7a];
+  var CATEGORY_NAMES = ['POESÍA', 'NARRATIVA', 'ENSAYO', 'PINTURA', 'TEATRO', 'CINE', 'MÚSICA', 'FOTOGRAFÍA', 'ESCULTURA'];
+  var BAY_SIGNS = { left:[], right:[], front:null, billLeft:[], billRight:[], billFront:null };
+  function seededRand(seed){
+    var s = seed;
+    return function(){
+      s = (s*9301+49297) % 233280;
+      if(s < 0) s += 233280;
+      return s/233280;
+    };
+  }
+
+  function makeSignTexture(word, hex){
+    var W = 640, H = 180;
+    var c = document.createElement('canvas'); c.width = W; c.height = H;
+    var ctx = c.getContext('2d');
+    var wood = ctx.createLinearGradient(0,0,0,H);
+    wood.addColorStop(0,'#2a1e12'); wood.addColorStop(0.5,'#1c130b'); wood.addColorStop(1,'#150e08');
+    ctx.fillStyle = wood; ctx.fillRect(0,0,W,H);
+    for(var i=0;i<60;i++){
+      ctx.strokeStyle = 'rgba(0,0,0,'+(0.08+Math.random()*0.1)+')';
+      ctx.beginPath(); ctx.moveTo(0, Math.random()*H); ctx.lineTo(W, Math.random()*H); ctx.stroke();
+    }
+    var hexStr = '#'+hex.toString(16).padStart(6,'0');
+    ctx.strokeStyle = hexStr; ctx.lineWidth = 6;
+    ctx.strokeRect(16,16,W-32,H-32);
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 2;
+    ctx.strokeRect(26,26,W-52,H-52);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = "700 92px Georgia, 'Times New Roman', serif";
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillText(word, W/2+3, H/2+4);
+    var grad = ctx.createLinearGradient(0,H/2-50,0,H/2+50);
+    grad.addColorStop(0, hexStr); grad.addColorStop(1,'#6b4e30');
+    ctx.fillStyle = grad;
+    ctx.fillText(word, W/2, H/2);
+    ctx.strokeStyle = 'rgba(255,235,190,0.25)'; ctx.lineWidth = 1;
+    ctx.strokeText(word, W/2-2, H/2-2);
+    var tex = new THREE.CanvasTexture(c);
+    if(SR) tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  function buildShelfBay(xCenter, zCenter, seedBase, categoryHex, categoryName, slotSink, dirSign, catIdx){
+    var rand = seededRand(seedBase);
+    var rows = 8, span = 4.0, top = 8.4, bottom = 0.5;
+    var rowH = (top-bottom)/rows;
+    var protrude = xCenter + dirSign*0.1;
+
+    var frame = new THREE.Mesh(new THREE.BoxGeometry(0.36, top-bottom+0.55, span+0.55), matShelfFrame);
+    frame.position.set(xCenter + dirSign*0.03, (top+bottom)/2, zCenter);
+    frame.castShadow = true; frame.receiveShadow = true;
+    world.add(frame);
+
+    // plain plaque above the bay — the readable category name lives on the billboard, not here
+    var signSpan = span + 1.3, signH = 1.15;
+    var signBacking = new THREE.Mesh(new THREE.BoxGeometry(0.16, signH, signSpan), matSandD);
+    signBacking.position.set(xCenter + dirSign*0.08, top+1.05, zCenter);
+    signBacking.receiveShadow = true;
+    world.add(signBacking);
+    var bracketMat = new THREE.MeshBasicMaterial({ color:(categoryHex||0xe8b84b) });
+    [-1,1].forEach(function(side){
+      var br = new THREE.Mesh(new THREE.OctahedronGeometry(0.11,1), bracketMat);
+      br.position.set(xCenter + dirSign*0.14, top+1.05, zCenter + side*(signSpan/2+0.14));
+      world.add(br);
+    });
+
+    for(var r=0;r<rows;r++){
+      var y0 = bottom + r*rowH;
+      var board = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, span), matSand);
+      board.position.set(protrude, y0, zCenter);
+      board.receiveShadow = true;
+      world.add(board);
+
+      // subcategory tab at the row's near edge — same hue, lighter per row, no text
+      var lightness = -0.12 + (r/(rows-1))*0.34;
+      var tabMat = new THREE.MeshBasicMaterial({ color: shadeHex(categoryHex||0xe8b84b, lightness) });
+      var tab = new THREE.Mesh(new THREE.BoxGeometry(0.16, rowH*0.5, 0.12), tabMat);
+      tab.position.set(protrude + dirSign*0.06, y0 + rowH*0.28, zCenter - span/2 - 0.1);
+      world.add(tab);
+
+      var zp = zCenter - span/2;
+      var zMax = zCenter + span/2;
+      while(zp < zMax - 0.05){
+        var w = 0.32 + rand()*0.24;
+        if(zp+w > zMax) w = zMax - zp;
+        var h = (rowH - 0.12) * (0.65 + rand()*0.35);
+        var bx = protrude, by = y0 + h/2 + 0.05, bz = zp + w/2;
+        queueInstancedBook(bx, by, bz, 0.32, h, Math.max(w-0.01,0.02), rand);
+        if(slotSink){ slotSink.push({ x:bx, y:by, z:bz, w:Math.max(w-0.01,0.02), h:h, dir:dirSign, catIdx:catIdx, row:r }); }
+        zp += w;
+      }
+    }
+    return { x: xCenter + dirSign*5.6, z: zCenter, yaw: dirSign>0 ? -Math.PI/2 : Math.PI/2 };
+  }
+  function buildFrontShelfBay(centerX, centerZ, seedBase, categoryHex, categoryName, slotSink, catIdx, spanArg){
+    var rand = seededRand(seedBase);
+    var rows = 8, span = spanArg || 4.0, top = 8.4, bottom = 0.5;
+    var rowH = (top-bottom)/rows;
+    var protrudeZ = centerZ + 0.1;
+
+    var frame = new THREE.Mesh(new THREE.BoxGeometry(span+0.55, top-bottom+0.55, 0.36), matShelfFrame);
+    frame.position.set(centerX, (top+bottom)/2, centerZ + 0.03);
+    frame.castShadow = true; frame.receiveShadow = true;
+    world.add(frame);
+
+    var signSpan = span + 1.3, signH = 1.15;
+    var signBacking = new THREE.Mesh(new THREE.BoxGeometry(signSpan, signH, 0.16), matSandD);
+    signBacking.position.set(centerX, top+1.05, centerZ + 0.08);
+    signBacking.receiveShadow = true;
+    world.add(signBacking);
+    var bracketMat = new THREE.MeshBasicMaterial({ color:(categoryHex||0xe8b84b) });
+    [-1,1].forEach(function(side){
+      var br = new THREE.Mesh(new THREE.OctahedronGeometry(0.11,1), bracketMat);
+      br.position.set(centerX + side*(signSpan/2+0.14), top+1.05, centerZ + 0.14);
+      world.add(br);
+    });
+
+    for(var r=0;r<rows;r++){
+      var y0 = bottom + r*rowH;
+      var board = new THREE.Mesh(new THREE.BoxGeometry(span, 0.06, 0.5), matSand);
+      board.position.set(centerX, y0, protrudeZ);
+      board.receiveShadow = true;
+      world.add(board);
+
+      var lightness = -0.12 + (r/(rows-1))*0.34;
+      var tabMat = new THREE.MeshBasicMaterial({ color: shadeHex(categoryHex||0xe8b84b, lightness) });
+      var tab = new THREE.Mesh(new THREE.BoxGeometry(0.12, rowH*0.5, 0.16), tabMat);
+      tab.position.set(centerX - span/2 - 0.1, y0 + rowH*0.28, protrudeZ + 0.06);
+      world.add(tab);
+
+      var xp = centerX - span/2;
+      var xMax = centerX + span/2;
+      while(xp < xMax - 0.05){
+        var w = 0.32 + rand()*0.24;
+        if(xp+w > xMax) w = xMax - xp;
+        var h = (rowH - 0.12) * (0.65 + rand()*0.35);
+        var bx = xp + w/2, by = y0 + h/2 + 0.05, bz = protrudeZ;
+        queueInstancedBook(bx, by, bz, Math.max(w-0.01,0.02), h, 0.32, rand);
+        if(slotSink){ slotSink.push({ x:bx, y:by, z:bz, w:Math.max(w-0.01,0.02), h:h, catIdx:catIdx, front:true, row:r }); }
+        xp += w;
+      }
+    }
+    return { x: centerX, z: centerZ + 5.8, yaw: Math.PI };
+  }
+  var leftX = -WALL_X + 2.5, rightX = WALL_X - 2.5;
+  var bayZs = [-4, -13, -22, -31];
+  function addCategoryBillboard(x, z, idx){
+    var tex = makeSignTexture(CATEGORY_NAMES[idx], CATEGORY_COLORS[idx]);
+    var mat = new THREE.SpriteMaterial({ map:tex, color:0xffffff, transparent:true, depthWrite:false });
+    var spr = new THREE.Sprite(mat);
+    spr.scale.set(4.4, 1.24, 1);
+    spr.position.set(x, 9.9, z);
+    world.add(spr);
+    return spr;
+  }
+  var TEXT_SLOTS = [], IMAGE_SLOTS = [], FRONT_SLOTS = [];
+  var BAY_HOTSPOTS = [];
+  bayZs.forEach(function(z, idx){
+    var hs = buildShelfBay(leftX, z, 11 + idx*13, CATEGORY_COLORS[idx], CATEGORY_NAMES[idx], TEXT_SLOTS, 1, idx);
+    BAY_HOTSPOTS.push(hs);
+    BAY_SIGNS.billLeft[idx] = addCategoryBillboard(leftX + 1.1, z, idx);
+  });
+  bayZs.forEach(function(z, idx){
+    var hs = buildShelfBay(rightX, z, 71 + idx*13, CATEGORY_COLORS[idx], CATEGORY_NAMES[idx], IMAGE_SLOTS, -1, idx);
+    BAY_HOTSPOTS.push(hs);
+    BAY_SIGNS.billRight[idx] = addCategoryBillboard(rightX - 1.1, z, idx);
+  });
+  BAY_SIGNS.billFront = [];
+  var FRONT_ROW = [ {x:0, cat:4, span:4.0, seed:131}, {x:-5.6, cat:5, span:2.7, seed:211}, {x:5.6, cat:6, span:2.7, seed:277}, {x:-11.2, cat:7, span:2.7, seed:337}, {x:11.2, cat:8, span:2.7, seed:401} ];
+  FRONT_ROW.forEach(function(f){
+    var hs = buildFrontShelfBay(f.x, 6, f.seed, CATEGORY_COLORS[f.cat], CATEGORY_NAMES[f.cat], FRONT_SLOTS, f.cat, f.span);
+    BAY_HOTSPOTS.push(hs);
+    BAY_SIGNS.billFront[f.cat] = addCategoryBillboard(f.x, 7.1, f.cat);
+  });
+  flushInstancedBooks();
+
+
+
+
+  // ---- central light column (video zone) ----
+  var beamGeo = new THREE.CylinderGeometry(1.1, 1.7, 10.6, 28, 1, true);
+  var beamMat = new THREE.MeshBasicMaterial({ color:0xe8b84b, transparent:true, opacity:0.07, side:THREE.DoubleSide });
+  var beam = new THREE.Mesh(beamGeo, beamMat);
+  beam.position.set(0, 5.4, -38);
+  world.add(beam);
+  var pedestal = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.5, 0.6, 28), matSandD);
+  pedestal.position.set(0, 0.3, -38);
+  pedestal.receiveShadow = true;
+  world.add(pedestal);
+  var pedRing = new THREE.Mesh(new THREE.TorusGeometry(1.35, 0.045, 8, 28), matGold);
+  pedRing.rotation.x = Math.PI/2;
+  pedRing.position.set(0, 0.62, -38);
+  world.add(pedRing);
+
+  // ============================================================
+  // MARKERS
+  // ============================================================
+  var markerGroup = new THREE.Group();
+  world.add(markerGroup);
+
+  // ---- hotspots: tap the beacon in front of a shelf to jump there, facing it head-on ----
+  var EYE_Y = 6.5;
+  var hotspotGroup = new THREE.Group();
+  world.add(hotspotGroup);
+  function addHotspot(hx, hz, hyaw){
+    var beacon = new THREE.Group();
+    beacon.position.set(hx, 0.06, hz);
+    var disc = new THREE.Mesh(new THREE.CircleGeometry(1.3, 32),
+      new THREE.MeshBasicMaterial({ color:0xe8b84b, transparent:true, opacity:0.24, side:THREE.DoubleSide }));
+    disc.rotation.x = -Math.PI/2;
+    beacon.add(disc);
+    var ring = new THREE.Mesh(new THREE.RingGeometry(0.85,1.06,36),
+      new THREE.MeshBasicMaterial({ color:0xe8b84b, transparent:true, opacity:0.9, side:THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI/2;
+    beacon.add(ring);
+    var glow = glowSprite(0xe8b84b);
+    glow.scale.set(2.4,2.4,2.4);
+    beacon.add(glow);
+    beacon.userData.hotspot = { x:hx, y:EYE_Y, z:hz, yaw:hyaw };
+    hotspotGroup.add(beacon);
+  }
+  BAY_HOTSPOTS.forEach(function(h){ addHotspot(h.x, h.z, h.yaw); });
+
+
+  // ---- scale the whole hall up: bigger, more spacious library ----
+  var SCALE = 2.3;
+  world.scale.setScalar(SCALE);
+  world.traverse(function(obj){
+    if(obj.isPointLight){ obj.distance = obj.distance * SCALE; }
+  });
+  scene.fog.density = scene.fog.density / SCALE;
+
+  function glowSprite(hexColor){
+    var c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    var ctx = c.getContext('2d');
+    var grad = ctx.createRadialGradient(64,64,0,64,64,64);
+    var hex = '#'+hexColor.toString(16).padStart(6,'0');
+    grad.addColorStop(0, hex+'cc');
+    grad.addColorStop(0.4, hex+'55');
+    grad.addColorStop(1, hex+'00');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,128,128);
+    var tex = new THREE.CanvasTexture(c);
+    var mat = new THREE.SpriteMaterial({ map:tex, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending });
+    var spr = new THREE.Sprite(mat);
+    spr.scale.set(0.9,0.9,0.9);
+    return spr;
+  }
+
+  var bookCoverTexCache = {};
+  function getBookCoverTexture(hexColor){
+    if(bookCoverTexCache[hexColor]) return bookCoverTexCache[hexColor];
+    var size = 128;
+    var c = document.createElement('canvas'); c.width = size; c.height = size;
+    var ctx = c.getContext('2d');
+    var col = new THREE.Color(hexColor);
+    var r0 = col.r*255, g0 = col.g*255, b0 = col.b*255;
+    var img = ctx.createImageData(size, size);
+    for(var i=0; i<img.data.length; i+=4){
+      var n = (Math.random()-0.5) * 34;
+      img.data[i]   = Math.max(0, Math.min(255, r0+n));
+      img.data[i+1] = Math.max(0, Math.min(255, g0+n));
+      img.data[i+2] = Math.max(0, Math.min(255, b0+n));
+      img.data[i+3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    // cloth/leather weave
+    ctx.strokeStyle = 'rgba(0,0,0,0.16)'; ctx.lineWidth = 1;
+    for(var x=-size; x<size*2; x+=5){
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x+size,size); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    for(var y=-size; y<size*2; y+=5){
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(size,y-size); ctx.stroke();
+    }
+    // worn vignette toward the edges
+    var vg = ctx.createRadialGradient(size/2,size/2,size*0.15,size/2,size/2,size*0.72);
+    vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.32)');
+    ctx.fillStyle = vg; ctx.fillRect(0,0,size,size);
+    // gilded trim border, like an antique cover
+    ctx.strokeStyle = 'rgba(232,184,75,0.55)'; ctx.lineWidth = 4;
+    ctx.strokeRect(5,5,size-10,size-10);
+    ctx.strokeStyle = 'rgba(232,184,75,0.25)'; ctx.lineWidth = 1;
+    ctx.strokeRect(11,11,size-22,size-22);
+    var tex = new THREE.CanvasTexture(c);
+    if(SR) tex.encoding = THREE.sRGBEncoding;
+    bookCoverTexCache[hexColor] = tex;
+    return tex;
+  }
+
+  function makeTitleTexture(text){
+    var W = 320, H = 76;
+    var c = document.createElement('canvas'); c.width = W; c.height = H;
+    var ctx = c.getContext('2d');
+    ctx.font = "600 32px Georgia, 'Times New Roman', serif";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 1;
+    ctx.fillStyle = '#f7edd6';
+    ctx.fillText(text, W/2, H/2);
+    ctx.shadowBlur = 0;
+    return new THREE.CanvasTexture(c);
+  }
+
+  var ZONES = {
+    video: { boxes:[{x:0,z:-38}], yMin:1.2, yMax:9.6, xSpread:0.9, color:0xb8493a }
+  };
+
+  function zoneWorldPos(zone, seed){
+    var rand = seededRand(seed || 1);
+    var box = zone.boxes[Math.floor(rand()*zone.boxes.length)];
+    var x = box.x + (rand()-0.5) * zone.xSpread * 2;
+    var y = zone.yMin + rand() * (zone.yMax - zone.yMin);
+    var z = box.z + (rand()-0.5) * 0.8;
+    return new THREE.Vector3(x,y,z);
+  }
+
+  function buildMarkerObject(note){
+    if(note.type === 'video'){
+      var zone = ZONES.video;
+      var pos = zoneWorldPos(zone, note.seed || 1);
+      var g = new THREE.Group();
+      g.position.copy(pos);
+      var core = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12),
+        new THREE.MeshBasicMaterial({ color: zone.color }));
+      g.add(core);
+      var vglow = glowSprite(zone.color);
+      g.add(vglow);
+      g.userData.glowSprite = vglow;
+      g.userData.noteId = note.id;
+      g.userData.isLitBook = false;
+      return g;
+    }
+    // text / image: an illuminated book, embedded right in the shelf among the dark ones
+    var cat = (typeof note.category === 'number') ? note.category : (Math.abs(note.seed||1) % CATEGORY_NAMES.length);
+    var color = CATEGORY_COLORS[cat] || (note.type === 'text' ? 0xc98a3a : 0xe8b84b);
+    var slots, slot, isFront;
+    if(cat >= 4){
+      slots = FRONT_SLOTS.filter(function(s){ return s.catIdx === cat; });
+      if(!slots.length) slots = FRONT_SLOTS;
+      isFront = true;
+    } else {
+      var pool = note.type === 'text' ? TEXT_SLOTS : IMAGE_SLOTS;
+      slots = pool.filter(function(s){ return s.catIdx === cat; });
+      if(!slots.length) slots = pool;
+      isFront = false;
+    }
+    if(note.subcategory){
+      var h0 = 0;
+      for(var ci=0; ci<note.subcategory.length; ci++){ h0 = (h0*31 + note.subcategory.charCodeAt(ci)) & 0xffff; }
+      var targetRow = h0 % 8;
+      var byRow = slots.filter(function(s){ return s.row === targetRow; });
+      if(byRow.length) slots = byRow;
+    }
+    slot = slots.length ? slots[Math.abs(note.seed||1) % slots.length] : {x:0,y:3,z:-20,w:0.1,h:0.5,dir:1};
+    var g = new THREE.Group();
+    var baseColorHex = color||0xc98a3a;
+    var bookMat = new THREE.MeshBasicMaterial({ map: getBookCoverTexture(baseColorHex), color: 0xffffff });
+    var edgeMat = new THREE.MeshBasicMaterial({ color: 0xe8b84b });
+    var book, edge;
+    if(isFront || slot.front){
+      g.position.set(slot.x, slot.y, slot.z + 0.24);
+      book = new THREE.Mesh(new THREE.BoxGeometry(slot.w*3.6, slot.h*1.55, 0.72), bookMat);
+      edge = new THREE.Mesh(new THREE.BoxGeometry(slot.w*3.6, 0.045, 0.73), edgeMat);
+      edge.position.set(0, slot.h*1.55/2 - 0.02, 0);
+    } else {
+      var dir = slot.dir || 1;
+      g.position.set(slot.x + dir*0.22, slot.y, slot.z);
+      book = new THREE.Mesh(new THREE.BoxGeometry(0.72, slot.h*1.55, slot.w*3.6), bookMat);
+      edge = new THREE.Mesh(new THREE.BoxGeometry(0.73, 0.045, slot.w*3.6), edgeMat);
+      edge.position.set(0, slot.h*1.55/2 - 0.02, 0);
+    }
+    g.add(book);
+    g.add(edge);
+
+    var haloTex = glowSprite(color).material.map;
+    var haloMat = new THREE.SpriteMaterial({ map: haloTex, transparent:true, opacity:0.35, depthWrite:false });
+    var halo = new THREE.Sprite(haloMat);
+    halo.scale.set(1.7,1.7,1.7);
+    g.add(halo);
+    g.userData.haloSprite = halo;
+
+    var titleText = note.title || (note.type==='text' ? 'apunte' : 'imagen');
+    if(titleText.length > 17) titleText = titleText.slice(0,16) + '…';
+    var titleMat = new THREE.SpriteMaterial({ map: makeTitleTexture(titleText), transparent:true, depthWrite:false });
+    var titleSpr = new THREE.Sprite(titleMat);
+    titleSpr.scale.set(1.9, 0.45, 1);
+    titleSpr.position.set(0, slot.h*0.82 + 0.56, 0);
+    g.add(titleSpr);
+
+    g.userData.noteId = note.id;
+    g.userData.isLitBook = true;
+    g.userData.material = bookMat;
+    g.userData.baseColor = new THREE.Color(0xffffff);
+    return g;
+  }
+
+  function renderMarkers(){
+    while(markerGroup.children.length) markerGroup.remove(markerGroup.children[0]);
+    notes.forEach(function(n){ markerGroup.add(buildMarkerObject(n)); });
+    $('dock-count').textContent = notes.length + ' notas';
+    $('empty-hint').style.display = notes.length ? 'none' : 'block';
+  }
+
+  // ============================================================
+  // SAMPLE CONTENT GENERATORS (no external assets)
+  // ============================================================
+  function makeSampleImageDataUrl(hexColor){
+    var hex = '#'+(hexColor||0xe8b84b).toString(16).padStart(6,'0');
+    var c = document.createElement('canvas'); c.width = 480; c.height = 360;
+    var ctx = c.getContext('2d');
+    var g = ctx.createLinearGradient(0,0,0,360);
+    g.addColorStop(0,'#120d08'); g.addColorStop(0.6,'#1c130c'); g.addColorStop(1,'#0a0705');
+    ctx.fillStyle = g; ctx.fillRect(0,0,480,360);
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 2;
+    for(var i=0;i<9;i++){
+      ctx.beginPath();
+      var x=Math.random()*480, y=Math.random()*360;
+      ctx.moveTo(x,y);
+      for(var s=0;s<5;s++){ x+=(Math.random()-0.5)*90; y+=(Math.random()-0.5)*90; ctx.lineTo(x,y); }
+      ctx.stroke();
+    }
+    var cx=240, cy=190;
+    var rgb = hex.match(/\w\w/g).map(function(h){ return parseInt(h,16); });
+    var rg = ctx.createRadialGradient(cx,cy,0,cx,cy,150);
+    rg.addColorStop(0,'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+',0.85)');
+    rg.addColorStop(0.3,'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+',0.25)');
+    rg.addColorStop(1,'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+',0)');
+    ctx.fillStyle = rg; ctx.fillRect(0,0,480,360);
+    ctx.fillStyle = hex;
+    for(var k=0;k<22;k++){
+      var a = Math.random()*Math.PI*2, r = 20+Math.random()*130;
+      var px = cx+Math.cos(a)*r, py = cy+Math.sin(a)*r;
+      ctx.beginPath(); ctx.arc(px,py, 0.6+Math.random()*2, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2); ctx.fill();
+    return c.toDataURL('image/jpeg', 0.85);
+  }
+
+  function makeSampleVideoUrl(){
+    return new Promise(function(resolve){
+      try{
+        var c = document.createElement('canvas'); c.width = 320; c.height = 240;
+        var ctx = c.getContext('2d');
+        if(typeof c.captureStream !== 'function' || typeof MediaRecorder === 'undefined'){ resolve(null); return; }
+        var mimeCandidates = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
+        var mime = mimeCandidates.find(function(m){ return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m); });
+        if(!mime){ resolve(null); return; }
+        var stream = c.captureStream(24);
+        var rec = new MediaRecorder(stream, { mimeType:mime });
+        var chunks = [];
+        rec.ondataavailable = function(e){ if(e.data && e.data.size) chunks.push(e.data); };
+        rec.onstop = function(){
+          try{
+            var blob = new Blob(chunks, { type:mime });
+            resolve(URL.createObjectURL(blob));
+          }catch(err){ resolve(null); }
+        };
+        rec.onerror = function(){ resolve(null); };
+        var start = Date.now(), duration = 2400;
+        function draw(){
+          var t = (Date.now()-start)/1000;
+          ctx.fillStyle = '#120d08'; ctx.fillRect(0,0,320,240);
+          for(var i=0;i<14;i++){
+            var a = t*0.6 + i*(Math.PI*2/14);
+            var r = 60 + Math.sin(t*2+i)*8;
+            var x = 160+Math.cos(a)*r, y = 120+Math.sin(a)*r;
+            ctx.fillStyle = 'rgba(232,184,75,'+(0.4+0.4*Math.sin(t*3+i))+')';
+            ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+          }
+          var pulse = 34 + Math.sin(t*3)*6;
+          var rg = ctx.createRadialGradient(160,120,0,160,120,pulse);
+          rg.addColorStop(0,'rgba(232,184,75,0.9)');
+          rg.addColorStop(1,'rgba(232,184,75,0)');
+          ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(160,120,pulse,0,Math.PI*2); ctx.fill();
+          if(Date.now()-start < duration){ requestAnimationFrame(draw); }
+          else { rec.stop(); }
+        }
+        rec.start();
+        draw();
+      }catch(e){ resolve(null); }
+    });
+  }
+
+  // ============================================================
+  // NOTES STATE + PERSISTENCE
+  // ============================================================
+  var STORAGE_KEY = 'notas:list';
+  var SEED_FLAG_KEY = 'notas:seeded_v1';
+  var notes = [];
+  var pendingType = null;
+  var pendingFileData = null;
+  var pendingCategory = null;
+
+  function saveNotes(){
+    return safeSet(STORAGE_KEY, JSON.stringify(notes.map(function(n){
+      if(n.type === 'video' && !n.mediaRemote){
+        var copy = Object.assign({}, n);
+        delete copy.media;
+        copy.ephemeral = true;
+        return copy;
+      }
+      return n;
+    })), false);
+  }
+  function loadNotes(){
+    return safeGet(STORAGE_KEY, false).then(function(res){
+      if(res && res.value){ try{ notes = JSON.parse(res.value); } catch(e){ notes = []; } }
+    }).then(renderMarkers);
+  }
+
+  function seedSamplesIfNeeded(){
+    return safeGet(SEED_FLAG_KEY, false).then(function(res){
+      if(res && res.value) return;
+      var samples = [
+        { cat:0, title:'primer axioma', text:'La ruina no es el final de la arquitectura: es su gramática. Cada columna nace de la grieta de la anterior.' },
+        { cat:1, title:'el hilo que no cierra', text:'Un personaje camina por una ciudad que ya fue demolida en el capítulo anterior. Sigue caminando igual.' },
+        { cat:2, title:'nota sobre el fracaso', text:'Fracasar con método es otra forma de tener un método. El resto es solo miedo con buena ortografía.' },
+        { cat:3, title:'trazo sin boceto', text:'Pintar sin bocetar es aceptar que el error de hoy es el color de mañana.' },
+        { cat:4, title:'acotación al margen', text:'(Entra el actor. Nadie le dijo por dónde. Improvisa una puerta con las manos.)' },
+        { cat:5, title:'plano secuencia', text:'Una sola toma, sin corte, para que el espectador no tenga dónde esconderse.' },
+        { cat:6, title:'silencio entre notas', text:'El silencio no es la ausencia de música — es la parte que todavía no te animaste a tocar.' },
+        { cat:7, title:'revelado tardío', text:'La foto que no se reveló a tiempo también es un documento: del momento en que dudaste.' },
+        { cat:8, title:'lo que falta en el mármol', text:'Esculpir es decidir qué parte de la piedra nunca fue la estatua.' },
+        { cat:0, title:'catorce versos y una duda', text:'El soneto pide orden. Yo le doy el desorden con rima consonante, a ver si así me perdona.', sub:'sonetos' },
+        { cat:1, title:'final que no elegí', text:'Escribí tres finales distintos. Publiqué el que menos me convencía, por honestidad con la duda.', sub:'cuento breve' },
+        { cat:2, title:'contra la opinión propia', text:'Toda crítica que no se anima a estar mal escrita todavía le tiene miedo al lector.', sub:'crítica' },
+        { cat:3, title:'capas de arrepentimiento', text:'El óleo perdona: bajo cada color que no funcionó, hay otro esperando ser el definitivo.', sub:'óleo' },
+        { cat:4, title:'el actor que no llegó', text:'Alguien tiene que decir sus líneas. El apuntador improvisa un monólogo sobre la ausencia.', sub:'monólogo' },
+        { cat:5, title:'escena que se cayó del guion', text:'La quitamos por tiempo. Quedó mejor así: lo que falta también cuenta una historia.', sub:'guion' },
+        { cat:6, title:'estribillo sin música todavía', text:'Tengo la letra hace un año. La melodía sigue esperando a que deje de darme vergüenza cantarla.', sub:'letra' },
+        { cat:7, title:'el que miró a cámara', text:'Todos los demás retratos fingen no saber que los estás mirando. Este no.', sub:'retrato' },
+        { cat:8, title:'el molde que se rompió', text:'El bronce salió perfecto. El molde no sobrevivió — nunca sobrevive lo que hace posible la forma.', sub:'bronce' },
+        { cat:2, title:'manifiesto de la ruina útil', sub:'ensayo largo', text:
+'Hay una mentira cómoda instalada en cada conversación sobre productividad: la idea de que el progreso es una línea recta, un acumular sin pérdida, un edificio que solo crece hacia arriba. Esta biblioteca nació para llevarle la contraria a esa mentira.\n\nCada estante que ves acá no guarda logros terminados. Guarda intentos. El libro que se enciende cuando lo tocás no es un trofeo — es un fragmento que decidiste sacar del ruido de tu cabeza y ponerlo en algún lugar donde pudiera respirar. Eso ya es suficiente. No hace falta que esté terminado, pulido, ni siquiera que tenga razón.\n\nLa arquitectura de esta sala repite ese principio en piedra: columnas que sostienen molduras que nacen de la grieta de la columna anterior. Nada acá pretende ser eterno. Todo está hecho para envejecer a la vista, para mostrar el trabajo, para que el desgaste sea parte del diseño y no un defecto que hay que esconder.\n\nPor eso las categorías tienen nombres de disciplinas y no de resultados: poesía, no "poemas publicados"; ensayo, no "tesis defendida"; escultura, no "obra terminada". El estante te pregunta en qué estás trabajando, no qué lograste. Es una diferencia chica en las palabras y enorme en la presión que te sacás de encima antes de subir el primer apunte.\n\nSi este texto llegó hasta acá y lo leíste entero, ya hiciste lo que esta biblioteca te pide: pararte un rato frente a algo que no estaba terminado, y quedarte igual. Bienvenido.' },
+        { cat:0, title:'defensa del verso torcido', sub:'ensayo breve', text:
+'Todo taller de poesía tiene, tarde o temprano, un momento en el que alguien dice "esta métrica no cierra" con la misma cara con la que se corrige un error de matemática. Y sin embargo el verso que no cierra es, casi siempre, el único que valía la pena escribir.\n\nLa métrica perfecta es un logro técnico. El verso torcido es una decisión: alguien prefirió la verdad de la respiración entrecortada antes que la elegancia de la regla. Cojea porque lo que dice también cojea. Arreglarlo sería mentir con mejor forma.\n\nNo estoy en contra de la técnica — estoy en contra de usarla como excusa para no decir lo que de verdad te está pasando. Aprendé las reglas. Después rompelas a propósito, no por vagancia. Esa diferencia se nota, y el lector, aunque no sepa nombrarla, también la siente.\n\nEste estante junta versos que decidieron cojear antes que mentir. Ninguno está terminado. Todos están vivos.' },
+        { cat:1, title:'el mapa no es el territorio, pero ayuda a perderse', sub:'estructura', text:
+'Empecé esta novela con un esquema de capítulos perfecto, dibujado en una servilleta, con flechas y todo. Para el capítulo cuatro ya no servía para nada, y sin embargo lo sigo usando — no para saber adónde voy, sino para medir cuánto me alejé.\n\nHay una escuela de pensamiento que dice que hay que outlinear todo antes de escribir una sola línea. Hay otra que dice que hay que tirarse a la pileta y confiar en el personaje. Yo terminé en un lugar más incómodo: outlineo para tener algo que traicionar. El plan no es el mapa del viaje, es la excusa para perderme con alguna dignidad.\n\nLos personajes que de verdad funcionan son los que en algún momento del segundo acto dejan de obedecer al esquema. Ese es el momento en que la novela empieza a existir de verdad, y también el momento en que más ganas dan de tirar todo y volver a lo seguro.\n\nNo lo hagas. Seguí al personaje. El esquema va a estar ahí cuando vuelvas, un poco más viejo, un poco menos importante de lo que creías.' },
+        { cat:3, title:'el color que llega antes que el dibujo', sub:'proceso', text:
+'Me enseñaron a dibujar primero y colorear después, como quien construye una casa: paredes antes que pintura. Pasé años pintando adentro de mis propias líneas, literal y en todo sentido. El día que empecé por el color, sin boceto, sentí que estaba haciendo trampa.\n\nNo era trampa. Era otra manera de pensar la forma: dejar que el color proponga dónde va el borde, en vez de que el borde le diga al color dónde puede estar. El cuadro se arma solo, a los tumbos, corrigiendo sobre la marcha — que es, ahora que lo escribo, la única manera en que se arma cualquier cosa que valga la pena.\n\nAbajo de cada capa que no funcionó hay otra esperando. Eso también es parte de la técnica: no borrar, tapar. Dejar que el error de ayer sea la textura de hoy. Un cuadro sin capas fallidas debajo probablemente no tiene mucho para decir.' },
+        { cat:4, title:'lo que hace el silencio en el escenario', sub:'dirección', text:
+'En los ensayos siempre hay un actor que le tiene miedo al silencio y lo llena con gesto, con movimiento, con cualquier cosa antes que dejar que el público se quede ahí, incómodo, sin que nadie le diga qué sentir.\n\nEse miedo es comprensible y es, también, el enemigo principal de cualquier puesta en escena honesta. El silencio en el teatro no es un vacío que hay que tapar — es el único momento en que el público deja de mirar la obra y empieza a mirarse a sí mismo reflejado en ella. Cortarlo antes de tiempo es como apagar la luz justo cuando alguien empezaba a ver algo.\n\nDirigir, en buena parte, es defender esos silencios de los actores que quieren llenarlos y de los productores que los quieren más cortos. Es la parte del oficio que menos se ve y más define si la obra respira o solo hace ruido durante dos horas.' },
+        { cat:5, title:'lo que el corte esconde', sub:'montaje', text:
+'El plano secuencia tiene mala fama de exhibicionismo técnico — mirá cuánto aguanto sin cortar — pero su verdadera función es otra: no dejarle al espectador la salida fácil del corte. Cuando cortás, le das permiso al ojo de descansar. Cuando no cortás, lo obligás a quedarse en la escena con vos, incómodo, sin editor que lo rescate.\n\nEl montaje clásico esconde sus costuras para que la historia fluya. El plano secuencia hace lo contrario: expone que no hay costuras, que todo pasó ahí, en tiempo real, sin red. Es una apuesta más honesta y más riesgosa, porque si algo sale mal no hay toma de repuesto disimulada entre corte y corte.\n\nLa escena que más me costó filmar en mi vida duró cuatro minutos sin cortes y la actriz se olvidó una línea en el minuto tres. Se la dejamos. Fue lo mejor de la toma — el error real, sostenido en cámara, más verdadero que cualquier diálogo escrito.' },
+        { cat:6, title:'grabar antes de estar listo', sub:'proceso', text:
+'Guardé una canción sin terminar durante ocho meses porque el estribillo "todavía no estaba". Un día la grabé como estaba — coja, con el estribillo a medio hacer — solo para tener una referencia. Esa grabación de referencia terminó siendo la versión final.\n\nHay una tentación enorme en la música de esperar a que todo esté perfecto antes de mostrarlo, y esa espera casi siempre es miedo disfrazado de perfeccionismo. Lo que grabás con dudas suena, paradójicamente, más humano que lo que grabás con seguridad. Se nota cuándo un cantante no está seguro de la nota y decide cantarla igual. Ese temblor es información, no error.\n\nAhora grabo temprano, a propósito, cuando la canción todavía no sabe bien qué es. Después edito, corto, repito — pero la primera toma insegura casi siempre queda, escondida debajo de las capas, sosteniendo todo lo demás.' },
+        { cat:7, title:'la foto que no salió como querías', sub:'proceso', text:
+'Tengo una carpeta llamada "fallidas" con miles de fotos que en su momento consideré un error técnico: desenfoque, luz quemada, encuadre torcido. Hace poco la abrí de nuevo, sin buscar nada en particular, y me di cuenta de que ahí estaban mis mejores fotos.\n\nLa foto técnicamente correcta documenta lo que había. La foto fallida documenta lo que sentiste mientras apretabas el obturador: el temblor de la mano, la prisa, la duda. Eso no se puede planear ni repetir a propósito. Es el único tipo de error que, si lo dejás vivir, se convierte en estilo.\n\nNo estoy diciendo que haya que salir a hacer fotos mal a propósito. Estoy diciendo que la primera reacción de borrar lo imperfecto merece, por lo menos, esperar una semana antes de ejecutarse. Lo que hoy parece un error casi siempre es, en realidad, el único momento sincero del rollo entero.' },
+        { cat:8, title:'lo que se pierde al vaciar el molde', sub:'proceso', text:
+'La primera vez que rompí un molde de yeso para sacar la pieza de bronce de adentro, sentí que estaba destruyendo algo. Tardé años en entender que el molde nunca fue la obra — era apenas el negativo necesario, el sacrificio previo, la forma que tenía que morir para que la otra pudiera existir.\n\nHay una lección ahí que se aplica bastante más allá del bronce: casi todo lo que hacés de verdad necesita un molde que no sobrevive el proceso. El primer borrador que tirás, la maqueta que desarmás, la versión de vos que tuviste que dejar atrás para llegar a esta. Nadie exhibe los moldes rotos. Pero sin ellos no hay pieza final.\n\nEste estante guarda piezas, no moldes. Pero atrás de cada una, siempre, hubo algo que tuvo que romperse primero.' }
+      ];
+      samples.forEach(function(s, i){
+        notes.push({
+          id:'sample-text-'+i, type:'text', title:s.title, text:s.text, category:s.cat,
+          subcategory: s.sub, created:new Date().toISOString(), seed: 3000+i*97
+        });
+        notes.push({
+          id:'sample-image-'+i, type:'image', title:s.title+' — fragmento', category:s.cat,
+          subcategory: s.sub, text:'imagen de ejemplo, generada en el primer encendido.',
+          media:makeSampleImageDataUrl(CATEGORY_COLORS[s.cat]),
+          created:new Date().toISOString(), seed: 5000+i*131
+        });
+      });
+      renderMarkers();
+      return saveNotes().then(function(){
+        return safeSet(SEED_FLAG_KEY, '1', false);
+      }).then(function(){
+        var videoTitles = ['proyección de ejemplo', 'segunda proyección', 'tercera proyección'];
+        var chain = Promise.resolve();
+        videoTitles.forEach(function(title, i){
+          chain = chain.then(function(){ return makeSampleVideoUrl(); }).then(function(url){
+            if(url){
+              notes.push({
+                id:'sample-video-'+i, type:'video', title:title,
+                text:'grabada en vivo, desde el propio lienzo del navegador — dura solo esta sesión (salvo que la app esté en netlify y la subas de nuevo desde el formulario).',
+                media:url, created:new Date().toISOString(), seed: 700+i*97
+              });
+              renderMarkers();
+            }
+          });
+        });
+        return chain;
+      }).then(function(){
+        saveNotes();
+      });
+    }).catch(function(err){ console.error('seed failed', err); });
+  }
+
+  // ============================================================
+  // COMPOSER / DETAIL / INFO UI
+  // ============================================================
+  var CATEGORIES_KEY = 'notas:categories';
+  function persistCategories(){
+    return safeSet(CATEGORIES_KEY, JSON.stringify(CATEGORY_NAMES), false);
+  }
+  function loadCategories(){
+    return safeGet(CATEGORIES_KEY, false).then(function(res){
+      if(res && res.value){
+        try{
+          var arr = JSON.parse(res.value);
+          if(Array.isArray(arr)){
+            arr.forEach(function(name, idx){
+              if(name && idx < CATEGORY_NAMES.length) applyCategoryName(idx, name, false);
+            });
+          }
+        }catch(e){}
+      }
+    }).catch(function(){});
+  }
+  function applyCategoryName(idx, newName, doPersist){
+    CATEGORY_NAMES[idx] = newName;
+    var tex = makeSignTexture(newName, CATEGORY_COLORS[idx]);
+    function swap(meshRef){
+      if(!meshRef) return;
+      var old = meshRef.material.map;
+      meshRef.material.map = tex;
+      meshRef.material.needsUpdate = true;
+      if(old) old.dispose();
+    }
+    if(idx >= 4){ swap(BAY_SIGNS.billFront[idx]); }
+    else { swap(BAY_SIGNS.billLeft[idx]); swap(BAY_SIGNS.billRight[idx]); }
+    if(doPersist !== false) persistCategories();
+  }
+
+  function buildCatPicker(){
+    var wrap = $('cat-picker');
+    wrap.innerHTML = '';
+    CATEGORY_NAMES.forEach(function(name, idx){
+      var chip = document.createElement('button');
+      chip.type = 'button'; chip.className = 'cat-chip';
+      var dot = document.createElement('span'); dot.className = 'dot';
+      dot.style.background = '#'+CATEGORY_COLORS[idx].toString(16).padStart(6,'0');
+      var label = document.createElement('span'); label.textContent = name;
+      chip.appendChild(dot); chip.appendChild(label);
+      chip.addEventListener('click', function(){
+        pendingCategory = idx;
+        wrap.querySelectorAll('.cat-chip').forEach(function(c){ c.classList.remove('selected'); });
+        chip.classList.add('selected');
+      });
+      wrap.appendChild(chip);
+    });
+    var plus = document.createElement('button');
+    plus.type = 'button'; plus.className = 'cat-chip';
+    var pdot = document.createElement('span'); pdot.className='dot'; pdot.style.background='var(--text-dim)';
+    var plabel = document.createElement('span'); plabel.textContent = '+ nueva';
+    plus.appendChild(pdot); plus.appendChild(plabel);
+    plus.addEventListener('click', function(){
+      var panel = $('cat-new-panel');
+      var show = panel.style.display !== 'block';
+      panel.style.display = show ? 'block' : 'none';
+      if(show){
+        $('cat-new-name').value = '';
+        var targets = $('cat-new-targets');
+        targets.innerHTML = '';
+        targets.style.display = 'flex'; targets.style.flexWrap = 'wrap'; targets.style.gap = '6px';
+        CATEGORY_NAMES.forEach(function(name, idx){
+          var t = document.createElement('button');
+          t.type = 'button'; t.className = 'cat-chip';
+          var td = document.createElement('span'); td.className='dot';
+          td.style.background = '#'+CATEGORY_COLORS[idx].toString(16).padStart(6,'0');
+          var tl = document.createElement('span'); tl.textContent = name;
+          t.appendChild(td); t.appendChild(tl);
+          t.addEventListener('click', function(){
+            var newName = $('cat-new-name').value.trim().toUpperCase();
+            if(!newName) return;
+            applyCategoryName(idx, newName, true);
+            panel.style.display = 'none';
+            buildCatPicker();
+            pendingCategory = idx;
+            var refreshed = wrap.querySelectorAll('.cat-chip')[idx];
+            if(refreshed) refreshed.classList.add('selected');
+          });
+          targets.appendChild(t);
+        });
+      }
+    });
+    wrap.appendChild(plus);
+  }
+
+  var activeTab = 'text';
+
+  function switchTab(type){
+    activeTab = type;
+    pendingType = (type === 'doc') ? 'text' : type;
+    pendingFileData = null;
+    $('file-preview').innerHTML = '';
+    $('composer-error').classList.remove('show');
+    $('composer-warn').classList.remove('show');
+    document.querySelectorAll('.type-tab').forEach(function(t){
+      t.classList.toggle('selected', t.getAttribute('data-type') === type);
+    });
+
+    if(type === 'text'){
+      $('composer-sub').textContent = 'elegí categoría y estante';
+      $('field-cat').style.display = 'block';
+      $('field-subcat').style.display = 'block';
+      $('field-file').style.display = 'none';
+      $('field-text').style.display = 'block';
+      $('input-text').placeholder = 'escribí...';
+    } else if(type === 'image'){
+      $('composer-sub').textContent = 'elegí categoría y estante';
+      $('field-cat').style.display = 'block';
+      $('field-subcat').style.display = 'block';
+      $('field-file').style.display = 'block';
+      $('field-file-label').textContent = 'imagen';
+      $('btn-pick-file').textContent = 'elegir imagen';
+      $('field-text').style.display = 'block';
+      $('input-text').placeholder = 'nota (opcional)';
+    } else if(type === 'video'){
+      $('composer-sub').textContent = 'columna de luz · se sube para guardarse';
+      $('field-cat').style.display = 'none';
+      $('field-subcat').style.display = 'none';
+      $('field-file').style.display = 'block';
+      $('field-file-label').textContent = 'video';
+      $('btn-pick-file').textContent = 'elegir video';
+      $('field-text').style.display = 'block';
+      $('input-text').placeholder = 'nota (opcional)';
+    } else if(type === 'doc'){
+      $('composer-sub').textContent = 'subí un .txt o .pdf · elegí categoría y estante';
+      $('field-cat').style.display = 'block';
+      $('field-subcat').style.display = 'block';
+      $('field-file').style.display = 'block';
+      $('field-file-label').textContent = 'archivo (.txt / .pdf)';
+      $('btn-pick-file').textContent = 'elegir archivo';
+      $('field-text').style.display = 'block';
+      $('input-text').placeholder = 'texto (se completa solo si es .txt)';
+    }
+    buildCatPicker();
+  }
+
+  function openComposer(){
+    pendingCategory = null;
+    $('input-title').value = '';
+    $('input-text').value = '';
+    $('input-subcat').value = '';
+    $('cat-new-panel').style.display = 'none';
+    switchTab('text');
+    $('composer').classList.add('open');
+  }
+  function closeComposer(){ $('composer').classList.remove('open'); }
+
+  document.querySelectorAll('.type-tab').forEach(function(t){
+    t.addEventListener('click', function(){ switchTab(t.getAttribute('data-type')); });
+  });
+
+  $('btn-pick-file').addEventListener('click', function(){
+    if(activeTab === 'image'){ $('file-image').value=''; $('file-image').click(); }
+    else if(activeTab === 'video'){ $('file-video').value=''; $('file-video').click(); }
+    else if(activeTab === 'doc'){ $('file-doc').value=''; $('file-doc').click(); }
+  });
+
+  $('btn-add').addEventListener('click', openComposer);
+  $('btn-cancel').addEventListener('click', closeComposer);
+  function renderLegend(){
+    var wrap = $('legend-dynamic');
+    wrap.innerHTML = '';
+    CATEGORY_NAMES.forEach(function(name, idx){
+      var item = document.createElement('div'); item.className = 'legend-item';
+      var dot = document.createElement('span'); dot.className = 'legend-dot';
+      dot.style.background = '#'+CATEGORY_COLORS[idx].toString(16).padStart(6,'0');
+      item.appendChild(dot);
+      item.appendChild(document.createTextNode(name.toLowerCase() + (idx>=4?' (frente)':'')));
+      wrap.appendChild(item);
+    });
+  }
+  $('btn-info').addEventListener('click', function(){ renderLegend(); $('info').classList.add('open'); });
+  function requestFS(){
+    try{
+      var el = document.documentElement;
+      var req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if(req && !document.fullscreenElement) req.call(el).catch(function(){});
+    }catch(e){}
+  }
+  $('btn-info-close').addEventListener('click', function(){ $('info').classList.remove('open'); requestFS(); });
+  document.addEventListener('pointerdown', function(){ requestFS(); }, { once:true, capture:true });
+
+  var TYPE_DOT_COLOR = { text:'#c9a878', image:'#e8b84b', video:'#b8493a' };
+  function renderIndex(){
+    var list = $('index-list');
+    list.innerHTML = '';
+    if(!notes.length){
+      var e = document.createElement('div'); e.className='index-empty'; e.textContent='sin apuntes todavía';
+      list.appendChild(e); return;
+    }
+    notes.slice().reverse().forEach(function(n){
+      var row = document.createElement('div'); row.className = 'index-item';
+      var dot = document.createElement('span'); dot.className = 'index-dot';
+      dot.style.background = TYPE_DOT_COLOR[n.type] || '#c9a878';
+      var t = document.createElement('span'); t.className = 'index-title';
+      t.textContent = n.title || (n.type==='text'?'apunte':n.type==='image'?'imagen':'video');
+      row.appendChild(dot); row.appendChild(t);
+      row.addEventListener('click', function(){
+        $('indexOverlay').classList.remove('open');
+        openDetail(n.id);
+      });
+      list.appendChild(row);
+    });
+  }
+  $('btn-index').addEventListener('click', function(){ renderIndex(); $('indexOverlay').classList.add('open'); });
+  $('btn-index-close').addEventListener('click', function(){ $('indexOverlay').classList.remove('open'); });
+
+  function readFileAsDataUrl(file){
+    return new Promise(function(resolve, reject){
+      var r = new FileReader();
+      r.onload = function(){ resolve(r.result); };
+      r.onerror = function(){ reject(new Error('no se pudo leer el archivo')); };
+      r.readAsDataURL(file);
+    });
+  }
+
+  $('file-image').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    readFileAsDataUrl(file).then(function(dataUrl){
+      pendingFileData = { dataUrl:dataUrl, name:file.name, isVideo:false, sizeMB:file.size/1048576 };
+      var prev = $('file-preview'); prev.innerHTML = '';
+      var img = document.createElement('img'); img.src = dataUrl; prev.appendChild(img);
+      var fn = document.createElement('div'); fn.className='fname';
+      fn.textContent = file.name + ' — ' + pendingFileData.sizeMB.toFixed(2) + ' MB';
+      prev.appendChild(fn);
+      if(pendingFileData.sizeMB > 3.5){
+        $('composer-warn').textContent = 'imagen pesada · puede no guardarse (máx ~5mb)';
+        $('composer-warn').classList.add('show');
+      }
+      $('composer').classList.add('open');
+    }).catch(function(err){
+      $('composer-error').textContent = err.message;
+      $('composer-error').classList.add('show');
+      $('composer').classList.add('open');
+    });
+  });
+
+  function uploadVideoToNetlify(file){
+    return fetch('/.netlify/functions/save-video', {
+      method: 'POST',
+      headers: { 'content-type': file.type || 'video/webm' },
+      body: file
+    }).then(function(res){
+      if(!res.ok) throw new Error('upload failed');
+      return res.json();
+    }).then(function(data){
+      return { id: data.id, url: '/.netlify/functions/get-video?id=' + data.id };
+    }).catch(function(){ return null; });
+  }
+
+  $('file-video').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var url = URL.createObjectURL(file);
+    pendingFileData = { dataUrl:url, name:file.name, isVideo:true, sizeMB:file.size/1048576, remote:false, remoteId:null };
+    var prev = $('file-preview'); prev.innerHTML = '';
+    var vid = document.createElement('video'); vid.src = url; vid.controls = true; vid.playsInline = true;
+    prev.appendChild(vid);
+    var fn = document.createElement('div'); fn.className='fname';
+    fn.textContent = file.name + ' — ' + pendingFileData.sizeMB.toFixed(2) + ' MB';
+    prev.appendChild(fn);
+    $('composer-warn').textContent = 'subiendo video para guardarlo de forma permanente...';
+    $('composer-warn').classList.add('show');
+    $('composer').classList.add('open');
+
+    var thisFile = file;
+    uploadVideoToNetlify(file).then(function(result){
+      if(pendingFileData && pendingFileData.name === thisFile.name && !pendingFileData.isPdf){
+        if(result){
+          pendingFileData.dataUrl = result.url;
+          pendingFileData.remote = true;
+          pendingFileData.remoteId = result.id;
+          $('composer-warn').textContent = 'video subido — se guarda de forma permanente';
+        } else {
+          $('composer-warn').textContent = 'no se pudo subir de forma permanente (¿estás en netlify?) · dura solo esta sesión';
+        }
+      }
+    });
+  });
+
+  function readFileAsText(file){
+    return new Promise(function(resolve, reject){
+      var r = new FileReader();
+      r.onload = function(){ resolve(r.result); };
+      r.onerror = function(){ reject(new Error('no se pudo leer el archivo')); };
+      r.readAsText(file);
+    });
+  }
+
+  $('file-doc').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+    if(isPdf){
+      readFileAsDataUrl(file).then(function(dataUrl){
+        pendingFileData = { dataUrl:dataUrl, name:file.name, isPdf:true, sizeMB:file.size/1048576 };
+        var prev = $('file-preview'); prev.innerHTML = '';
+        var fn = document.createElement('div'); fn.className='fname';
+        fn.textContent = 'PDF adjunto: ' + file.name + ' — ' + pendingFileData.sizeMB.toFixed(2) + ' MB';
+        prev.appendChild(fn);
+        if(pendingFileData.sizeMB > 3.5){
+          $('composer-warn').textContent = 'pdf pesado · puede no guardarse (máx ~5mb)';
+          $('composer-warn').classList.add('show');
+        }
+      }).catch(function(err){
+        $('composer-error').textContent = err.message;
+        $('composer-error').classList.add('show');
+      });
+    } else {
+      readFileAsText(file).then(function(content){
+        $('input-text').value = content;
+        pendingFileData = null;
+      }).catch(function(err){
+        $('composer-error').textContent = err.message;
+        $('composer-error').classList.add('show');
+      });
+    }
+  });
+
+  $('btn-save').addEventListener('click', function(){
+    var title = $('input-title').value.trim();
+    var text = $('input-text').value.trim();
+    $('composer-error').classList.remove('show');
+    if(pendingType === 'text' && !text && !(pendingFileData && pendingFileData.isPdf)){
+      $('composer-error').textContent = 'falta texto o archivo';
+      $('composer-error').classList.add('show'); return;
+    }
+    if((pendingType === 'image' || pendingType === 'video') && !pendingFileData){
+      $('composer-error').textContent = 'falta archivo';
+      $('composer-error').classList.add('show'); return;
+    }
+    if((pendingType === 'text' || pendingType === 'image') && pendingCategory === null){
+      $('composer-error').textContent = 'elegí una categoría';
+      $('composer-error').classList.add('show'); return;
+    }
+    var note = {
+      id:'n'+Date.now()+Math.floor(Math.random()*1000), type:pendingType,
+      title:title, text:text, created:new Date().toISOString(),
+      seed: Math.floor(Math.random()*100000)+1
+    };
+    if(pendingType === 'text' || pendingType === 'image'){
+      note.category = pendingCategory;
+      var subcat = $('input-subcat').value.trim();
+      if(subcat) note.subcategory = subcat;
+    }
+    if(pendingFileData){
+      note.media = pendingFileData.dataUrl; note.mediaName = pendingFileData.name;
+      if(pendingFileData.isPdf) note.mediaKind = 'pdf';
+      if(pendingFileData.remote){ note.mediaRemote = true; note.remoteVideoId = pendingFileData.remoteId; }
+    }
+    notes.push(note);
+    renderMarkers(); saveNotes(); closeComposer();
+  });
+
+  function openDetail(id){
+    var n = notes.filter(function(x){ return x.id===id; })[0];
+    if(!n) return;
+    $('detail-title').textContent = n.title || (n.type==='text'?'apunte':n.type==='image'?'imagen':'video');
+    var body = $('detail-body'); body.innerHTML = '';
+    if(n.type==='image' && n.media){ var img=document.createElement('img'); img.src=n.media; body.appendChild(img); }
+    if(n.type==='text' && n.mediaKind==='pdf' && n.media){
+      var embed = document.createElement('embed');
+      embed.src = n.media; embed.type = 'application/pdf';
+      embed.style.width = '100%'; embed.style.height = '340px'; embed.style.border = '1px solid var(--sandD)';
+      embed.style.display = 'block'; embed.style.marginBottom = '10px';
+      body.appendChild(embed);
+      var openLink = document.createElement('a');
+      openLink.href = n.media; openLink.target = '_blank'; openLink.rel = 'noopener';
+      openLink.className = 'caps'; openLink.style.fontFamily = "'Oswald',sans-serif";
+      openLink.style.fontSize = '10.5px'; openLink.style.color = 'var(--gold)';
+      openLink.style.display = 'inline-block'; openLink.style.marginBottom = '14px';
+      openLink.textContent = 'abrir pdf en pestaña nueva';
+      body.appendChild(openLink);
+    }
+    if(n.type==='video'){
+      if(n.media){ var vid=document.createElement('video'); vid.src=n.media; vid.controls=true; vid.playsInline=true; vid.loop=true; body.appendChild(vid); }
+      else {
+        var gone=document.createElement('div');
+        gone.style.fontFamily="'Oswald',sans-serif"; gone.style.fontSize='11px';
+        gone.style.color='#b8493a'; gone.style.marginBottom='12px';
+        gone.textContent='video expirado';
+        gone.className='caps';
+        body.appendChild(gone);
+      }
+    }
+    var textNode = document.createElement('div'); textNode.className='detail-text'; textNode.textContent = n.text || '';
+    body.appendChild(textNode);
+    var metaParts = [ CATEGORY_NAMES[n.category] || '', n.subcategory || '', new Date(n.created).toLocaleString('es-AR') ].filter(Boolean);
+    $('detail-meta').textContent = metaParts.join(' · ');
+    $('btn-delete').onclick = function(){
+      if(n.mediaRemote && n.remoteVideoId){
+        fetch('/.netlify/functions/delete-video', {
+          method:'POST', headers:{'content-type':'application/json'},
+          body: JSON.stringify({ id: n.remoteVideoId })
+        }).catch(function(){});
+      }
+      notes = notes.filter(function(x){ return x.id!==id; });
+      renderMarkers(); saveNotes();
+      $('detail').classList.remove('open');
+    };
+    $('detail').classList.add('open');
+  }
+  $('btn-close').addEventListener('click', function(){ $('detail').classList.remove('open'); });
+
+  // ============================================================
+  // TOUCH / MOUSE 3D NAVIGATION — first-person walk
+  // left half of screen: floating joystick, appears where you press, to walk
+  // right half of screen: drag to look around · tap a lit book to open it
+  // ============================================================
+  var dom = renderer.domElement;
+  var raycaster = new THREE.Raycaster();
+  var ndc = new THREE.Vector2();
+  var LOOK_SENS = 0.0026, WHEEL_SENS = 0.03;
+  var velYaw = 0, velPitch = 0;
+  var isDragging = false;
+
+  function hideHint(){ var h=$('drag-hint'); if(!h.classList.contains('hide')) h.classList.add('hide'); }
+
+  // ---- floating joystick (left half): walk in the direction you press ----
+  var joyWrap = $('joystick'), joyBase = $('joy-base'), joyKnob = $('joy-knob');
+  var joyId = null, joyOrigin = null, joyVec = { x:0, y:0 };
+  var JOY_RADIUS = 52;
+  function joyShow(x,y){
+    joyWrap.style.left = (x-52)+'px';
+    joyWrap.style.top = (y-52)+'px';
+    joyWrap.classList.add('active');
+  }
+  function joyUpdate(x,y){
+    var dx = x-joyOrigin.x, dy = y-joyOrigin.y;
+    var d = Math.min(JOY_RADIUS, Math.hypot(dx,dy));
+    var a = Math.atan2(dy,dx);
+    var kx = Math.cos(a)*d, ky = Math.sin(a)*d;
+    joyKnob.style.left = (30+kx)+'px';
+    joyKnob.style.top = (30+ky)+'px';
+    joyVec.x = kx/JOY_RADIUS; joyVec.y = ky/JOY_RADIUS;
+  }
+  function joyReset(){
+    joyWrap.classList.remove('active');
+    joyKnob.style.left = '30px'; joyKnob.style.top = '30px';
+    joyVec.x = 0; joyVec.y = 0;
+  }
+
+  function raycastTapAt(clientX, clientY){
+    ndc.x = (clientX / window.innerWidth) * 2 - 1;
+    ndc.y = -(clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(ndc, camera);
+    var hsHits = raycaster.intersectObjects(hotspotGroup.children, true);
+    if(hsHits.length){
+      var hobj = hsHits[0].object;
+      while(hobj && !hobj.userData.hotspot && hobj.parent) hobj = hobj.parent;
+      if(hobj && hobj.userData.hotspot){
+        var hs = hobj.userData.hotspot;
+        pos.set(hs.x * SCALE, hs.y, hs.z * SCALE);
+        yaw = hs.yaw; pitch = 0.08;
+        velYaw = 0; velPitch = 0;
+        updateCamera();
+        return true;
+      }
+    }
+    var hits = raycaster.intersectObjects(markerGroup.children, true);
+    if(hits.length){
+      var obj = hits[0].object;
+      while(obj && !obj.userData.noteId && obj.parent) obj = obj.parent;
+      if(obj && obj.userData.noteId){ openDetail(obj.userData.noteId); return true; }
+    }
+    return false;
+  }
+
+  // ---- look drag (right half) + tap-to-walk zone (left half) ----
+  var lookId = null, lookPrev = null, dragMoved = 0, dragStartTime = 0;
+  var joyMoved = 0, joyStartTime = 0, joyActive = false;
+  var TAP_THRESHOLD = 8;
+
+  // ---- pinch with two fingers, anywhere: walk forward/back ----
+  var pinchPointers = {};
+  var pinchActive = false, pinchDist = 0;
+  function dist2(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+  dom.addEventListener('pointerdown', function(e){
+    dom.setPointerCapture(e.pointerId);
+    autoOrbit = false;
+    pinchPointers[e.pointerId] = { x:e.clientX, y:e.clientY };
+    var ids = Object.keys(pinchPointers);
+    if(ids.length === 2){
+      pinchActive = true;
+      var a = pinchPointers[ids[0]], b = pinchPointers[ids[1]];
+      pinchDist = dist2(a,b);
+      return;
+    }
+    if(pinchActive) return;
+
+    if(e.clientX < window.innerWidth * 0.5 && joyId === null){
+      joyId = e.pointerId;
+      joyOrigin = { x:e.clientX, y:e.clientY };
+      joyMoved = 0; joyStartTime = Date.now(); joyActive = false;
+      joyShow(e.clientX, e.clientY);
+    } else if(lookId === null){
+      lookId = e.pointerId;
+      lookPrev = { x:e.clientX, y:e.clientY };
+      isDragging = true; dragMoved = 0; dragStartTime = Date.now();
+    }
+  });
+
+  dom.addEventListener('pointermove', function(e){
+    if(pinchPointers[e.pointerId]) pinchPointers[e.pointerId] = { x:e.clientX, y:e.clientY };
+
+    if(pinchActive){
+      var ids = Object.keys(pinchPointers);
+      if(ids.length === 2){
+        var a = pinchPointers[ids[0]], b = pinchPointers[ids[1]];
+        var d = dist2(a,b);
+        moveForward((d - pinchDist) * 0.045);
+        pinchDist = d;
+        updateCamera();
+      }
+      return;
+    }
+
+    if(e.pointerId === joyId){
+      var dx0 = e.clientX - joyOrigin.x, dy0 = e.clientY - joyOrigin.y;
+      joyMoved = Math.hypot(dx0,dy0);
+      if(joyMoved > TAP_THRESHOLD){ joyActive = true; hideHint(); }
+      if(joyActive){ joyUpdate(e.clientX, e.clientY); }
+      return;
+    }
+    if(e.pointerId === lookId && lookPrev){
+      var dx = e.clientX - lookPrev.x, dy = e.clientY - lookPrev.y;
+      lookPrev = { x:e.clientX, y:e.clientY };
+      hideHint();
+      dragMoved += Math.abs(dx) + Math.abs(dy);
+      var dYaw = -dx * LOOK_SENS;
+      var dPitch = -dy * LOOK_SENS;
+      yaw += dYaw;
+      pitch = Math.min(PITCH_MAX, Math.max(PITCH_MIN, pitch + dPitch));
+      velYaw = dYaw; velPitch = dPitch;
+      updateCamera();
+    }
+  });
+
+  function endPointer(e){
+    delete pinchPointers[e.pointerId];
+    if(Object.keys(pinchPointers).length < 2){ pinchActive = false; }
+
+    if(e.pointerId === joyId){
+      var wasJoyTap = !joyActive && joyMoved < TAP_THRESHOLD && (Date.now()-joyStartTime) < 500;
+      joyId = null; joyOrigin = null; joyActive = false; joyReset();
+      if(wasJoyTap){ raycastTapAt(e.clientX, e.clientY); }
+      return;
+    }
+    if(e.pointerId === lookId){
+      var wasTap = dragMoved < 6 && (Date.now() - dragStartTime) < 500;
+      lookId = null; lookPrev = null; isDragging = false;
+      if(wasTap){
+        velYaw = 0; velPitch = 0;
+        raycastTapAt(e.clientX, e.clientY);
+      }
+    }
+  }
+  dom.addEventListener('pointerup', endPointer);
+  dom.addEventListener('pointercancel', endPointer);
+
+  dom.addEventListener('wheel', function(e){
+    e.preventDefault();
+    moveForward(-e.deltaY * WHEEL_SENS);
+    updateCamera();
+  }, { passive:false });
+
+  window.addEventListener('resize', function(){
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  var autoOrbit = true;
+
+  var frameCount = 0;
+  function animate(){
+    requestAnimationFrame(animate);
+    var t = Date.now()*0.001;
+    frameCount++;
+    if(autoOrbit){ yaw += 0.00045; updateCamera(); }
+    else if(!isDragging && (Math.abs(velYaw) > 0.00003 || Math.abs(velPitch) > 0.00003)){
+      yaw += velYaw;
+      pitch = Math.min(PITCH_MAX, Math.max(PITCH_MIN, pitch + velPitch));
+      velYaw *= 0.925; velPitch *= 0.925;
+      updateCamera();
+    }
+    if(joyVec.x !== 0 || joyVec.y !== 0){
+      moveForward(-joyVec.y * 0.62);
+      strafe(joyVec.x * 0.62);
+      updateCamera();
+    }
+    // pulses/flicker only need to update a few times a second, not every frame
+    if(frameCount % 3 === 0){
+      markerGroup.children.forEach(function(g){
+        if(g.userData.glowSprite){ g.userData.glowSprite.material.rotation += 0.009; }
+        if(g.userData.haloSprite){ g.userData.haloSprite.material.rotation += 0.0066; }
+        if(g.userData.isLitBook && g.userData.material){
+          var k = 0.82 + 0.18*Math.sin(t*2.2 + g.position.x);
+          g.userData.material.color.copy(g.userData.baseColor).multiplyScalar(k);
+        }
+      });
+      flickerLights.forEach(function(l,i){
+        l.intensity = l.userData.baseIntensity * (0.85 + 0.15*Math.sin(t*6+i*2) + 0.05*Math.sin(t*13+i));
+      });
+      var pulse = 1 + 0.14*Math.sin(t*2.4);
+      hotspotGroup.children.forEach(function(b){ b.scale.set(pulse,1,pulse); });
+    }
+    renderer.render(scene, camera);
+  }
+
+  // hard safety net: hide the loading screen and make sure rendering starts, no matter what
+  var animateStarted = false;
+  function startAnimateOnce(){ if(!animateStarted){ animateStarted = true; animate(); } }
+  setTimeout(function(){
+    $('loading').classList.add('hide');
+    startAnimateOnce();
+  }, 5000);
+
+  loadCategories().then(function(){
+    return loadNotes();
+  }).then(function(){
+    startAnimateOnce();
+    setTimeout(function(){
+      $('loading').classList.add('hide');
+      safeGet('notas:info_seen_v1', false).then(function(res){
+        if(!res || !res.value){
+          renderLegend();
+          $('info').classList.add('open');
+          safeSet('notas:info_seen_v1', '1', false);
+        }
+      });
+    }, 300);
+    setTimeout(function(){ hideHint(); }, 6500);
+    return seedSamplesIfNeeded();
+  });
+})();
+</script>
+</body>
+</html>
